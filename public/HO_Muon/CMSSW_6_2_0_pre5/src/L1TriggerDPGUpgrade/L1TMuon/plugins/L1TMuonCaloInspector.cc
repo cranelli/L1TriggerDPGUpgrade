@@ -167,7 +167,7 @@ private:
   void filldPhiPtHistograms(float phi1, float pt, float phi2, std::string key);
   void fillEnergyHistograms(float energy, std::string key);
   //bool IsaSiPM(const HORecHit * bho_reco);
-  bool IsaSiPM(int ieta, int iphi);
+  bool IsaSiPM(double eta, double phi);
   void fillStationDistributionHistograms(TriggerPrimitiveStationMap stubs, std::string key);
   void fillMapHistograms(float eta, float phi,
 			 int ieta, int iphi,
@@ -326,12 +326,17 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
   //auto btruth = _doGen ? truthParticles->cbegin() : globalMuons->cbegin();
   //auto etruth = _doGen ? truthParticles->cend() : globalMuons->cend();
   //if (_doGen) {
+  
+
   iEvent.getByLabel(_genInput,truthParticles);
   auto btruth = truthParticles->cbegin();
   auto etruth = truthParticles->cend();
   //}
   //std::cout << "Number of truth particles:"
   //<< truthParticles->size() << std::endl;
+
+  
+  
   for( ; btruth != etruth; ++btruth ) {
     // Initial quality cuts
     if (_doGen) {
@@ -368,6 +373,22 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
     for(int i = 0; i<4; i++){
       prop_rpc[i] = shProp->propagate(initial,*_rpcCyl[i]);
     }
+
+    //See how many truth muons go through SiPM sectors after propogation.
+    
+    if(IsaSiPM(prop_ho.globalPosition().eta(), prop_ho.globalPosition().phi())){
+      //Propogated eta and phi, truth pt
+      fillKinematicHistograms(prop_ho.globalPosition().eta(),
+			      prop_ho.globalPosition().phi(),
+			      btruth->pt(),
+			      "truth_prop_ho-SiPMSector");
+      
+      fillMapHistograms(prop_ho.globalPosition().eta(), 
+			prop_ho.globalPosition().phi(), 
+			0, 0, 0, 0,
+			"Truth_prop_ho-SiPMSector");
+    }
+
 	
 
     /*
@@ -403,10 +424,10 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
 				  prop_ho.globalPosition().phi(),
 				  ho_recoEta,ho_recoPhi,
 				  "proptruth-HOReco");
-     
+      
       
       // Select out only HO's with SIPMS
-      if(IsaSiPM(ho_recoieta, ho_recoiphi)){
+      if(IsaSiPM(ho_recoEta, ho_recoPhi)){
 	  fillDeltaEtaPhiHistograms(btruth->eta(),btruth->phi(),
 				ho_recoEta,ho_recoPhi,
 				"truth-Ho_RecowSiPM");
@@ -434,6 +455,29 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
 				      prop_ho.globalPosition().phi(),
 				      ho_recoEta,ho_recoPhi,
 				      "proptruth-HORecowSiPM_EnergySelection");
+	    /*
+	     * After the two main selection cuts, 
+	     * see which ones are associated with real muons.
+	     * Condition that they are in the same tile, muon was propogated to.
+	     */
+	    // Check if propogated muon and generated muon are in the same tile
+	    if(std::abs(ho_recoEta - prop_ho.globalPosition().eta()) < 0.087/2
+	       && std::abs(ho_recoPhi - prop_ho.globalPosition().phi()) < 0.087/2){
+	      fillEnergyHistograms(bho_reco->energy(),
+				   "Ho_RecowSiPM_EnergySelection_AssociatedTruth");
+	      fillDeltaEtaPhiHistograms(prop_ho.globalPosition().eta(),
+					prop_ho.globalPosition().phi(),
+					ho_recoEta,ho_recoPhi,
+					"proptruth-HORecowSiPM_EnergySelection_AssociatedTruth");
+	    }
+	    else{
+	      fillEnergyHistograms(bho_reco->energy(),
+				   "Ho_RecowSiPM_EnergySelection_NoAssociatedTruth");
+	      fillDeltaEtaPhiHistograms(prop_ho.globalPosition().eta(),
+					prop_ho.globalPosition().phi(),
+					ho_recoEta,ho_recoPhi,
+					"proptruth-HORecowSiPM_EnergySelection_NoAssociatedTruth");
+	    }
 	  }
 	}	   
       
@@ -757,6 +801,8 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
     } // end loop on RPC
   } // end loop on truth or global
 
+    //Count of Truth Muons going through HO sectors with SiPMs
+    
   // Here we fill counters - notice that I have to avoid leaving
   // the function analyze before I get here, otherwise the counts
   // will not be correct
@@ -1034,18 +1080,24 @@ void L1TMuonCaloInspector::fillEnergyHistograms(float energy, std::string key){
 // Example of how to pass the HORecHit object
 //bool L1TMuonCaloInspector::IsaSiPM(const HORecHit * bho_rec){
 
-bool L1TMuonCaloInspector::IsaSiPM(int ieta, int iphi){
+bool L1TMuonCaloInspector::IsaSiPM(double eta, double phi){
   //int ieta = bho_reco->id().ieta();
   //int iphi = bho_reco->id().iphi();
   //Sectors 9 and 10 in YB1
-  if(ieta >= 5 && ieta <= 10){
-    if(iphi >= 47 && iphi <= 58){
+  //  5 <= ieta <= 10, end of eta range  = ieta * 0.087
+  // 47 <= iphi <= 58, end of  phi range  = iphi * 0.087 for iphi <= 36 
+  //                                   and -pi + (iphi-36)*0.087 for iphi > 36
+  if(eta >= (5-1)*0.087 && eta <= (10)*0.087){
+    if(phi >= -M_PI+(47-36-1)*(2*M_PI/72) && phi <= -M_PI+(58-36)*(2*M_PI/72)){
       return true;
     }
   }
   //Sectors 11 and 12 in YB2
-  if(ieta >= 11 && ieta <= 15){
-    if(iphi >= 59 && iphi <= 70){
+  //  11 <= ieta <= 15, end of eta range  = ieta * 0.087
+  // 59 <= iphi <= 70, end of  phi range  = iphi * 0.087 for iphi <= 36 
+  //                                   and -pi + (iphi-36)*0.087 for iphi > 36
+  if(eta >= (11-1)*0.087 && eta <= 15*0.087){
+    if(phi >= -M_PI+(59-36-1)*(2*M_PI/72) && phi <= -M_PI+(70-36)*(2*M_PI/72)){
       return true;
     }
   }
