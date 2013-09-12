@@ -3,7 +3,8 @@
 // Package:    L1TMuon
 // Class:      L1TMuonCaloInspector
 // 
-/**\class L1TMuonCaloInspector L1TMuonCaloInspector.cc L1TriggerDPGUpgrade/L1TMuon/plugins/L1TMuonCaloInspector.cc
+/**\class L1TMuonCaloInspector L1TMuonCaloInspector.cc 
+   L1TriggerDPGUpgrade/L1TMuon/plugins/L1TMuonCaloInspector.cc
 
  Description: [one line class summary]
 
@@ -12,6 +13,7 @@
 */
 //
 // Original Author:  Alberto Belloni
+//     Modified by:  Christopher Anelli
 //         Created:  Wed, 12 Jun 2013 16:42:12 GMT
 // $Id$
 //
@@ -24,12 +26,16 @@
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/ESHandle.h"
 
 #include "FWCore/Framework/interface/Event.h"
+#include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
+#include "CalibFormats/CaloTPG/interface/CaloTPGRecord.h"
+#include "CalibFormats/CaloTPG/interface/CaloTPGTranscoder.h"
 #include "DataFormats/Math/interface/deltaR.h"
 
 #include "DataFormats/HepMCCandidate/interface/GenParticleFwd.h"
@@ -48,6 +54,21 @@
 #include "DataFormats/HcalRecHit/interface/CastorRecHit.h"
 #include "DataFormats/HcalRecHit/interface/HcalCalibRecHit.h"
 #include "DataFormats/HcalRecHit/interface/HcalRecHitFwd.h"
+
+#include "Geometry/Records/interface/IdealGeometryRecord.h"
+#include "Geometry/Records/interface/CaloGeometryRecord.h"
+#include "Geometry/CaloTopology/interface/HcalTopology.h"
+#include "Geometry/CaloGeometry/interface/CaloGeometry.h"
+#include "Geometry/Records/interface/HcalGeometryRecord.h"
+
+#include "TrackPropagation/SteppingHelixPropagator/interface/SteppingHelixPropagator.h"
+#include "TrackingTools/Records/interface/TrackingComponentsRecord.h"
+#include "MagneticField/Engine/interface/MagneticField.h"
+#include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
+#include "Geometry/CommonDetUnit/interface/GlobalTrackingGeometry.h"
+#include "Geometry/Records/interface/GlobalTrackingGeometryRecord.h"
+#include "DataFormats/GeometrySurface/interface/Cylinder.h"
+#include "TrackingTools/TrajectoryState/interface/TrajectoryStateOnSurface.h"
 
 #include "L1TriggerDPGUpgrade/DataFormats/interface/L1TMuonTriggerPrimitive.h"
 #include "L1TriggerDPGUpgrade/DataFormats/interface/L1TMuonTriggerPrimitiveFwd.h"
@@ -82,6 +103,12 @@ private:
   
   edm::Service<TFileService> _fileService;
   
+  edm::ESHandle<CaloTPGTranscoder> _caloDecoder;
+
+  // Surfaces to be used for extrapolation
+  Cylinder::CylinderPointer _rpcCyl[4]; // 4 = number of stations
+  Cylinder::CylinderPointer _hoCyl;
+
   bool _doGen;
   edm::InputTag _genInput;
 
@@ -103,6 +130,11 @@ private:
   // map with histograms: all deltaEta and deltaPhi plots will
   // have same boundaries (very generous), then work out useful
   // ranges with plotting macro
+
+  std::map<std::string,TH1F*> _h1Eta;
+  std::map<std::string,TH1F*> _h1Phi;
+  std::map<std::string,TH1F*> _h1Pt;
+
   std::map<std::string,TH1F*> _h1dDeltaEta;
   std::map<std::string,TH1F*> _h1dDeltaPhi;
   std::map<std::string,TH1F*> _h1dDeltaR;
@@ -113,8 +145,13 @@ private:
   std::map<std::string,TH1F*> _h1dPt;
 
   std::map<std::string,TH2F*> _h2dEtaPhi;
+  std::map<std::string,TH2F*> _h2diEtaiPhi;
+  std::map<std::string,TH2F*> _h2dXY;
 
-  std::map<std::string,TH1F*> _h1dStations;
+  std::map<std::string,TH1F*> _h1StationDistribution;
+
+  std::map<std::string,TH1F*> _h1Energy;
+  std::map<std::string,TH2F*> _h2dDeltaPhiPt;
 
   TH1F* _counters;
   enum { ALL=0, TRUTH, RPC, DTTF, HCAL, STDMU, GLBMU };
@@ -122,10 +159,22 @@ private:
   TriggerPrimitiveRef getBestTriggerPrimitive
   (const TriggerPrimitiveList& list, unsigned subsystem) const;
 
+
+
   void fillDeltaEtaPhiHistograms(float eta1, float phi1,
 				 float eta2, float phi2,
 				 std::string key);
-
+  void filldPhiPtHistograms(float phi1, float pt, float phi2, std::string key);
+  void fillEnergyHistograms(float energy, std::string key);
+  //bool IsaSiPM(const HORecHit * bho_reco);
+  bool IsaSiPM(double eta, double phi);
+  void fillStationDistributionHistograms(TriggerPrimitiveStationMap stubs, std::string key);
+  void fillMapHistograms(float eta, float phi,
+			 int ieta, int iphi,
+			 float x, float y,
+			 std::string key);
+  void fillKinematicHistograms(float eta, float phi, float pt,
+			       std::string key);
   // ----------member data ---------------------------
 };
 
@@ -161,6 +210,25 @@ L1TMuonCaloInspector::L1TMuonCaloInspector(const edm::ParameterSet& iConfig)
 
   _counters = _fileService->make<TH1F>("counter","counters",10,-0.5,9.5);
 
+  // Build surfaces for extrapolation
+  Cylinder::PositionType pos0; // mah, we do not use them, but they are
+  Cylinder::RotationType rot0; // needed in Cylinder constructor
+  
+  //changing to cm
+  _rpcCyl[0] = Cylinder::build(400,pos0,rot0);
+  _rpcCyl[1] = Cylinder::build(500,pos0,rot0);
+  _rpcCyl[2] = Cylinder::build(600,pos0,rot0);
+  _rpcCyl[3] = Cylinder::build(700,pos0,rot0);
+
+  _hoCyl = Cylinder::build(360,pos0,rot0);
+  /*
+  _rpcCyl[0] = Cylinder::build(4000,pos0,rot0);
+  _rpcCyl[1] = Cylinder::build(5000,pos0,rot0);
+  _rpcCyl[2] = Cylinder::build(6000,pos0,rot0);
+  _rpcCyl[3] = Cylinder::build(7000,pos0,rot0);
+
+  _hoCyl = Cylinder::build(3600,pos0,rot0);
+  */
 }
 
 
@@ -189,6 +257,29 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
   bool foundDttf  = false;
   bool foundHcal  = false;
   bool foundStdMu = false;
+  
+  edm::ESHandle<HcalTopology> htopo;
+  iSetup.get<IdealGeometryRecord>().get(htopo);
+
+  edm::ESHandle<CaloGeometry> hgeome;
+  iSetup.get<CaloGeometryRecord>().get(hgeome);
+
+  // Setup the decoder
+  iSetup.get<CaloTPGRecord>().get(_caloDecoder);
+  //_caloDecoder->setup(iSetup, CaloTPGTranscoder::HcalTPG);
+
+  // Setup the B field
+  edm::ESHandle<MagneticField> bField;
+  iSetup.get<IdealMagneticFieldRecord>().get(bField);
+
+  // Setup the tracking geometry
+  edm::ESHandle<GlobalTrackingGeometry> htrackgeo;
+  iSetup.get<GlobalTrackingGeometryRecord>().get(htrackgeo);
+
+  // Setup the track propagator
+  edm::ESHandle<Propagator> shProp;
+  iSetup.get<TrackingComponentsRecord>().
+    get("SteppingHelixPropagatorAlong", shProp);
 
   // Here we open all collections!
   edm::Handle<reco::GenParticleCollection> truthParticles;
@@ -217,6 +308,17 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
   edm::Handle<HORecHitCollection> hoRecoHits;
   iEvent.getByLabel("horeco",hoRecoHits);
 
+  edm::ESHandle<CaloGeometry> caloGeo;
+  const CaloGeometryRecord& geoC = iSetup.get<CaloGeometryRecord>();
+  geoC.get(caloGeo);
+  
+  // HORecHit *myHit; 
+  // HcalDetId myId = myHit->id();
+  // GlobalPoint myPosition = caloGeo->getPosition(myId);
+  // myPosition.eta(), myPosition.phi(), myPosition.x()...
+
+  //_RPCStationDistribution = _fileService->make<TH1F>("RPCStationDistribution", "Distribution of RPC events by Station",4,1,4);
+
   // Weird idea: if running on data, let us use the global muons
   // instead of truth muons in the outer loop
   // May have to use good old unsigned int loop on collections
@@ -224,56 +326,246 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
   //auto btruth = _doGen ? truthParticles->cbegin() : globalMuons->cbegin();
   //auto etruth = _doGen ? truthParticles->cend() : globalMuons->cend();
   //if (_doGen) {
+  
+
   iEvent.getByLabel(_genInput,truthParticles);
   auto btruth = truthParticles->cbegin();
   auto etruth = truthParticles->cend();
   //}
+  //std::cout << "Number of truth particles:"
+  //<< truthParticles->size() << std::endl;
 
+  
+  
   for( ; btruth != etruth; ++btruth ) {
     // Initial quality cuts
     if (_doGen) {
       if (std::abs(btruth->pdgId()) != 13 ||
-	  btruth->pt()<16.)
+	  btruth->pt()<20.)
 	continue;
     }
     else {
-      if (btruth->pt()<16.)
+      if (btruth->pt()<20.)
 	continue;
     }
     foundTruth = true;
-    // end of quality cuts, let's start with RPC
+
+    //Let us fill some just "truth" histograms.
+    fillKinematicHistograms(btruth->eta(),btruth->phi(),btruth->pt(),"truth");
+    fillMapHistograms(btruth->eta(), btruth->phi(), 
+		      0, 0, 0, 0,
+		      "Truth");
+    //Propogate the truth muons to each of the different detector positions:
+
+
+    FreeTrajectoryState initial(GlobalPoint(btruth->vx(),
+					      btruth->vy(),
+					      btruth->vz()),
+				  GlobalVector(btruth->px(),
+					       btruth->py(),
+					       btruth->pz()),
+				  btruth->charge(),
+				  &*bField);
+    //For the HO
+    TrajectoryStateOnSurface prop_ho = 
+      shProp->propagate(initial,*_hoCyl);
+    TrajectoryStateOnSurface prop_rpc[4];
+    for(int i = 0; i<4; i++){
+      prop_rpc[i] = shProp->propagate(initial,*_rpcCyl[i]);
+    }
+
+    //See how many truth muons go through SiPM sectors after propogation.
+    
+    if(IsaSiPM(prop_ho.globalPosition().eta(), prop_ho.globalPosition().phi())){
+      //Propogated eta and phi, truth pt
+      fillKinematicHistograms(prop_ho.globalPosition().eta(),
+			      prop_ho.globalPosition().phi(),
+			      btruth->pt(),
+			      "truth_prop_ho-SiPMSector");
+      
+      fillMapHistograms(prop_ho.globalPosition().eta(), 
+			prop_ho.globalPosition().phi(), 
+			0, 0, 0, 0,
+			"Truth_prop_ho-SiPMSector");
+    }
+
+	
+
+    /*
+     * Work with the HO_reco
+     */
+    
+    auto bho_reco = hoRecoHits->begin();
+    auto eho_reco = hoRecoHits->end();
+    //std::cout << "Number of HO Reconstructed Hits:"
+    //<< hoRecoHits->size() <<" ";
+    for( ; bho_reco != eho_reco; ++bho_reco ) {
+
+      double ho_recoPhi = caloGeo->getPosition(bho_reco->id()).phi();
+      double ho_recoEta = caloGeo->getPosition(bho_reco->id()).eta();
+      double ho_recox = caloGeo->getPosition(bho_reco->id()).x();
+      double ho_recoy = caloGeo->getPosition(bho_reco->id()).y();
+      int ho_recoieta = bho_reco->id().ieta();
+      int ho_recoiphi = bho_reco->id().iphi();
+      
+
+      // Lets fill some Reconstructed HO Histograms
+
+      fillEnergyHistograms(bho_reco->energy(),"Ho_Reco");
+
+      fillDeltaEtaPhiHistograms(btruth->eta(),btruth->phi(),
+				ho_recoEta,ho_recoPhi,
+				"truth-Ho_Reco");
+      filldPhiPtHistograms(btruth->phi(),btruth->pt(), 
+			   ho_recoPhi,
+			   "truth-HOReco");
+      if (prop_ho.isValid())
+	fillDeltaEtaPhiHistograms(prop_ho.globalPosition().eta(),
+				  prop_ho.globalPosition().phi(),
+				  ho_recoEta,ho_recoPhi,
+				  "proptruth-HOReco");
+      
+      
+      // Select out only HO's with SIPMS
+      if(IsaSiPM(ho_recoEta, ho_recoPhi)){
+	  fillDeltaEtaPhiHistograms(btruth->eta(),btruth->phi(),
+				ho_recoEta,ho_recoPhi,
+				"truth-Ho_RecowSiPM");
+	  fillEnergyHistograms(bho_reco->energy(),"Ho_RecowSiPM");
+	  fillMapHistograms(ho_recoEta, ho_recoPhi, 
+			    ho_recoieta, ho_recoiphi, ho_recox, ho_recoy,
+			    "HORecoWithSiPM");
+	  //Use Propogated Truth Particles
+	  fillDeltaEtaPhiHistograms(prop_ho.globalPosition().eta(),
+				  prop_ho.globalPosition().phi(),
+				  ho_recoEta,ho_recoPhi,
+				  "proptruth-HORecowSiPM");
+
+	  //Make a second selection cut on the energy > 0.5
+	  if(bho_reco->energy() > 0.5){
+	    fillDeltaEtaPhiHistograms(btruth->eta(),btruth->phi(),
+				      ho_recoEta,ho_recoPhi,
+				      "truth-Ho_RecowSiPM_EnergySelection");
+	    fillEnergyHistograms(bho_reco->energy(),"Ho_RecowSiPM_EnergySelection");
+	    filldPhiPtHistograms(btruth->phi(),btruth->pt(), 
+				 ho_recoPhi,
+				 "truth-HORecowSiPM_EnergySelection");
+	    //Use Propogated Truth Particles
+	    fillDeltaEtaPhiHistograms(prop_ho.globalPosition().eta(),
+				      prop_ho.globalPosition().phi(),
+				      ho_recoEta,ho_recoPhi,
+				      "proptruth-HORecowSiPM_EnergySelection");
+	    /*
+	     * After the two main selection cuts, 
+	     * see which ones are associated with real muons.
+	     * Condition that they are in the same tile, muon was propogated to.
+	     */
+	    // Check if propogated muon and generated muon are in the same tile
+	    if(std::abs(ho_recoEta - prop_ho.globalPosition().eta()) < 0.087/2
+	       && std::abs(ho_recoPhi - prop_ho.globalPosition().phi()) < 0.087/2){
+	      fillEnergyHistograms(bho_reco->energy(),
+				   "Ho_RecowSiPM_EnergySelection_AssociatedTruth");
+	      fillDeltaEtaPhiHistograms(prop_ho.globalPosition().eta(),
+					prop_ho.globalPosition().phi(),
+					ho_recoEta,ho_recoPhi,
+					"proptruth-HORecowSiPM_EnergySelection_AssociatedTruth");
+	    }
+	    else{
+	      fillEnergyHistograms(bho_reco->energy(),
+				   "Ho_RecowSiPM_EnergySelection_NoAssociatedTruth");
+	      fillDeltaEtaPhiHistograms(prop_ho.globalPosition().eta(),
+					prop_ho.globalPosition().phi(),
+					ho_recoEta,ho_recoPhi,
+					"proptruth-HORecowSiPM_EnergySelection_NoAssociatedTruth");
+	    }
+	  }
+	}	   
+      
+      // Make Selection Cuts on the Energy (Only events > 0.5)
+      if(bho_reco->energy() > 0.5){
+	fillDeltaEtaPhiHistograms(btruth->eta(),btruth->phi(),
+				  ho_recoEta,ho_recoPhi,
+				  "truth-Ho_Reco_EnergySelection");
+	filldPhiPtHistograms(btruth->phi(),btruth->pt(), 
+			     ho_recoPhi,
+			     "truth-HOReco_EnergySelection");
+      }
+    }
+
+    /*
+     * Start with the RPC
+     */
+    
     auto brpc = rpcTriggerPrimitives->cbegin();
     auto erpc = rpcTriggerPrimitives->cend();
+    //std::cout << "Number of rpcTriggerPrimitives:"
+    //<< rpcTriggerPrimitives->size() <<" ";
     for( ; brpc != erpc; ++brpc ) {
+      // std::cout <<"with layers: " << rpcTriggerPrimitives->layer()<< endl;
       double rpcEta=0.,rpcPhi=0.;
       int rpcStat=0; // number of RPC stations with a trigger primitive
       TriggerPrimitiveStationMap stubs = brpc->getStubs();
       // Chris' function will return configuration of RPC trigger
       // primitives: how many and which stations
       //int rpctype = getType(stubs);
- 
+      fillStationDistributionHistograms(stubs, "RPC");
+      
       // Loop on RPC stations, for each of which you can get a TP
       unsigned station;
-      for( station = 1; station <= 4; ++station ) {
+      for(station = 1; station <= 4; ++station ) {
 	const unsigned idx = 4*1+station-1; // RPCb=1
+	//_RPCStationDistribution->Fill(station, stubs.count(idx));
 	if( !stubs.count(idx) ) continue;
 	TriggerPrimitiveList tpRpcB = stubs[idx];
 	TriggerPrimitiveRef bestRpcB = getBestTriggerPrimitive(tpRpcB,1);
 	rpcEta+=bestRpcB->getCMSGlobalEta();
 	rpcPhi+=bestRpcB->getCMSGlobalPhi();
 	++rpcStat;
+	std::stringstream keystream;
+	//if(station==3 || station == 4) cout << "Station 3 or 4 used" << std::endl;
+	keystream <<"truth-rpc_Layer" << station;
+	
+	//filling histograms that are RPC layer sensitive.
+	
+	filldPhiPtHistograms(btruth->phi(),btruth->pt(), 
+			     bestRpcB->getCMSGlobalPhi(),
+			     keystream.str());
+
+	if (prop_rpc[station-1].isValid()){
+	  //std::cout << "RPC Propogation Valid" << std::endl;
+	  fillDeltaEtaPhiHistograms(prop_rpc[station-1].globalPosition().eta(),
+				    prop_rpc[station-1].globalPosition().phi(),
+				    bestRpcB->getCMSGlobalEta(),
+				    bestRpcB->getCMSGlobalPhi(),
+				    "prop-truth-rpc");
+	}
       }
+
+      //I question this.  Now that we have the propogator, why should we only assign one
+      // eta and phi to the RPC.  Why not calculate it for every triger primitive.
+
       if (rpcStat>0) {
 	rpcEta/=rpcStat;
 	rpcPhi/=rpcStat;
       }
-      // Let us fill some histograms!
+
+      //Note beyond here we are using the average of the layers.
+
+      // Let us fill some histograms that are RPC layer averaged!
       fillDeltaEtaPhiHistograms(btruth->eta(),btruth->phi(),
 				rpcEta,rpcPhi,
 				"truth-rpc");
-      ///////////////////////////////////////
+
+      filldPhiPtHistograms(btruth->phi(),btruth->pt(), rpcPhi, "truth-rpc");
       
-      // Continue with matching only if we did found a match
+      if (btruth == truthParticles->cbegin()) {
+      	fillMapHistograms(rpcEta,rpcPhi,0.,0., 0., 0.,
+      			  "rpc");
+      }
+      
+      ////////////////////-///////////////////
+      
+      // Continue with matching only if we did find a match
       if (sqrt(reco::deltaR2(btruth->eta(),btruth->phi(),
 			     rpcEta,rpcPhi))>_dRtruthToRpc)
 	continue;
@@ -319,6 +611,13 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
 				    dttfEta,dttfPhi,
 				    "rpc-dttf");
 	}
+	if (btruth == truthParticles->cbegin() &&
+	    brpc == rpcTriggerPrimitives->cbegin()) {
+	  fillMapHistograms(dttfEta,dttfPhi,0.,0., 0., 0.,
+			    "dttf");
+	}
+	
+
 	// Check: what is the eta of the internal track vs. the
 	// one of the trigger primitive?
 	//if (btruth == truthParticles->cbegin() &&
@@ -330,7 +629,7 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
 	//}
 	///////////////////////////////////////
 
-	// Continue with matching only if we did found a match
+	// Continue with matching only if we did find a match
 	if (sqrt(reco::deltaR2(rpcEta,rpcPhi,
 			       dttfEta,dttfPhi))>_dRrpcToDttf)
 	  continue;
@@ -340,12 +639,18 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
 	auto bhcal = hcalTriggerPrimitives->cbegin();
 	auto ehcal = hcalTriggerPrimitives->cend();
 	for( ; bhcal != ehcal; ++bhcal ) {
+
 	  //TriggerPrimitiveStationMap stubs = bhcal->getStubs();
 	  //const unsigned idx = 4*4+1-1; // HCAL=4, station=1
 	  //if( !stubs.count(idx) ) continue;
 	  //TriggerPrimitiveList tpHcal = stubs[idx];
 	  //TriggerPrimitiveRef bestHcal = 
 	  //  getBestTriggerPrimitive(tpHcal,4);
+
+	  //filldPhiPtHistograms(btruth->phi(), btruth->pt(),
+	  //			 bhcal->getCMSGlobalPhi(),
+	  //			 "truth-hcal");
+
 	  if (brpc == rpcTriggerPrimitives->cbegin() &&
 	      bdttf == dttfTriggerPrimitives->cbegin() ) {
 	    fillDeltaEtaPhiHistograms(btruth->eta(),btruth->phi(),
@@ -367,17 +672,32 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
 				      bhcal->getCMSGlobalPhi(),
 				      "dttf-hcal");
 	  }
+	  if (btruth == truthParticles->cbegin() &&
+	      brpc == rpcTriggerPrimitives->cbegin() &&
+	      bdttf == dttfTriggerPrimitives->cbegin() ) {
+	    fillMapHistograms(bhcal->getCMSGlobalEta(),
+	  		      bhcal->getCMSGlobalPhi(),
+	  		      0.,0., 0., 0.,
+	  		      "hcal");
+	  }
+	  
 
 	  // Notice that here I have a truth muon, an RPC TP,
 	  // a DTTF track and an HCAL TP, not necessarily matching
 
-	  // Continue with matching only if we did found a match
+	  // Continue with matching only if we did find a match
 	  if (sqrt(reco::deltaR2(dttfEta,dttfPhi,
 				 bhcal->getCMSGlobalEta(),
 				 bhcal->getCMSGlobalPhi()))>_dRdttfToHcal)
 	    continue;
 	  foundHcal = true;
 	  
+	  //std::cout << _caloDecoder->hcaletValue
+	  //  (bhcal->detId<HcalTrigTowerDetId>().ieta(),
+	  //   bhcal->detId<HcalTrigTowerDetId>().iphi(),
+	  //   bhcal->getHCALData().SOI_compressedEt)
+	  //	    << std::endl;
+
 	  // Let's loop on muons
 	  // I will be sneaky and write this code only once
 	  // then use it for standalone and global muons by just
@@ -393,7 +713,7 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
 					"truth-standalone");
 	    }
 
-	    // Continue with matching only if we did found a match
+	    // Continue with matching only if we did find a match
 	    if (sqrt(reco::deltaR2(bhcal->getCMSGlobalEta(),
 				   bhcal->getCMSGlobalPhi(),
 				   bstdmu->eta(),
@@ -460,6 +780,20 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
 					  bcalo->hadPosition().phi(),
 					  "hcal-calotower");
 	      }
+	      if (btruth == truthParticles->cbegin() &&
+	      	  brpc == rpcTriggerPrimitives->cbegin() &&
+	      	  bdttf == dttfTriggerPrimitives->cbegin() &&
+	      	  bhcal == hcalTriggerPrimitives->cbegin() &&
+	      	  bstdmu == standaloneMuons->cbegin() ) {
+		if (fabs(bcalo->hadPosition().eta())<1.3)
+		  fillMapHistograms(bcalo->hadPosition().eta(),
+				    bcalo->hadPosition().phi(),
+				    bcalo->id().ieta(),
+				    bcalo->id().iphi(),
+				    bcalo->hadPosition().x(),
+				    bcalo->hadPosition().y(),
+				    "calotower");
+	      }
 	    } // end loop on calo towers
 	  } // end loop on standalone muons
 	} // end loop on HCAL TP
@@ -467,6 +801,8 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
     } // end loop on RPC
   } // end loop on truth or global
 
+    //Count of Truth Muons going through HO sectors with SiPMs
+    
   // Here we fill counters - notice that I have to avoid leaving
   // the function analyze before I get here, otherwise the counts
   // will not be correct
@@ -599,6 +935,9 @@ getBestTriggerPrimitive(const TriggerPrimitiveList& list,
   }
   return result;
 }
+/*
+ *Method to fill in histograms of the eta and phi distributions of a type given by the key.
+ */
 
 void L1TMuonCaloInspector::fillDeltaEtaPhiHistograms(float eta1, float phi1,
 						     float eta2, float phi2,
@@ -638,7 +977,179 @@ void L1TMuonCaloInspector::fillDeltaEtaPhiHistograms(float eta1, float phi1,
   return;
 }
 
+void L1TMuonCaloInspector::fillMapHistograms(float eta, float phi,
+					     int ieta, int iphi,
+					     float x, float y,
+					     std::string key) {
+  
+  if(!_h2dEtaPhi.count(key))
+    _h2dEtaPhi[key] = 
+      _fileService->make<TH2F>(Form("etaphi_%s",key.c_str()),
+			       Form("#phi vs. #eta %s",
+				    key.c_str()),
+			       500,-1.3,1.3,
+			       500,-3.14,3.14);
+  _h2dEtaPhi[key]->Fill(eta,phi);
 
+if(!_h2diEtaiPhi.count(key))
+    _h2diEtaiPhi[key] = 
+      _fileService->make<TH2F>(Form("ietaiphi_%s",key.c_str()),
+			       Form("iphi vs. ieta %s",
+				    key.c_str()),
+			       500,-15,15,
+			       500,-0,72);
+  _h2diEtaiPhi[key]->Fill(ieta,iphi);
+
+  if(!_h2dXY.count(key))
+    _h2dXY[key] = 
+      _fileService->make<TH2F>(Form("xy_%s",key.c_str()),
+			       Form("Y vs. X %s",
+				    key.c_str()),
+			       2050,-4100,4100,
+			       2050,-4100,4100);
+  _h2dXY[key]->Fill(x,y);
+  
+  return;
+}
+
+
+void L1TMuonCaloInspector::filldPhiPtHistograms(float phi1, float pt, 
+						     float phi2,std::string key) {
+  
+  if(!_h2dDeltaPhiPt.count(key))
+    _h2dDeltaPhiPt[key] = 
+      _fileService->make<TH2F>(Form("dphipt_%s",key.c_str()),
+			       Form("#Delta#phi vs. Pt %s",
+				    key.c_str()),
+			       500,0,200,
+			       500,-M_PI/10,M_PI/10);
+  _h2dDeltaPhiPt[key]->Fill(pt, phi1-phi2);
+  
+  return;
+}
+
+void L1TMuonCaloInspector::fillKinematicHistograms(float eta, float phi,
+						   float pt,
+						   std::string key) {
+  
+  if(!_h1dEta.count(key))
+    _h1dEta[key] = 
+      _fileService->make<TH1F>(Form("eta_%s",key.c_str()),
+			       Form("#eta %s",
+				    key.c_str()),
+			       500,-1.3,1.3);
+  _h1dEta[key]->Fill(eta);
+  
+  if(!_h1dPhi.count(key))
+    _h1dPhi[key] = 
+      _fileService->make<TH1F>(Form("phi_%s",key.c_str()),
+			       Form("#phi %s",
+				    key.c_str()),
+			       500,-M_PI,M_PI);
+  _h1dPhi[key]->Fill(phi);
+  
+  if(!_h1dPt.count(key))
+    _h1dPt[key] = 
+      _fileService->make<TH1F>(Form("pt_%s",key.c_str()),
+			       Form("#pt %s",
+				    key.c_str()),
+			       500,0,250);
+  _h1dPt[key]->Fill(pt);
+
+
+
+  
+  return;
+}
+
+
+//Method to fill a Histogram with Energies
+
+void L1TMuonCaloInspector::fillEnergyHistograms(float energy, std::string key){
+
+  if(!_h1Energy.count(key)){
+    _h1Energy[key] = 
+      _fileService->make<TH1F>(Form("Energy_%s",key.c_str()),
+			       Form("Energy %s",key.c_str()),
+			       500,0.0,100.0);
+  }
+  _h1Energy[key]->Fill(energy);
+}
+
+
+// Example of how to pass the HORecHit object
+//bool L1TMuonCaloInspector::IsaSiPM(const HORecHit * bho_rec){
+
+bool L1TMuonCaloInspector::IsaSiPM(double eta, double phi){
+  //int ieta = bho_reco->id().ieta();
+  //int iphi = bho_reco->id().iphi();
+  //Sectors 9 and 10 in YB1
+  //  5 <= ieta <= 10, end of eta range  = ieta * 0.087
+  // 47 <= iphi <= 58, end of  phi range  = iphi * 0.087 for iphi <= 36 
+  //                                   and -pi + (iphi-36)*0.087 for iphi > 36
+  if(eta >= (5-1)*0.087 && eta <= (10)*0.087){
+    if(phi >= -M_PI+(47-36-1)*(2*M_PI/72) && phi <= -M_PI+(58-36)*(2*M_PI/72)){
+      return true;
+    }
+  }
+  //Sectors 11 and 12 in YB2
+  //  11 <= ieta <= 15, end of eta range  = ieta * 0.087
+  // 59 <= iphi <= 70, end of  phi range  = iphi * 0.087 for iphi <= 36 
+  //                                   and -pi + (iphi-36)*0.087 for iphi > 36
+  if(eta >= (11-1)*0.087 && eta <= 15*0.087){
+    if(phi >= -M_PI+(59-36-1)*(2*M_PI/72) && phi <= -M_PI+(70-36)*(2*M_PI/72)){
+      return true;
+    }
+  }
+  return false;
+}
+
+   void L1TMuonCaloInspector::fillStationDistributionHistograms(TriggerPrimitiveStationMap stubs, std::string key){
+  if(!_h1StationDistribution.count(key)){
+      _h1StationDistribution[key] = 
+	_fileService->make<TH1F>(Form("%s_Station_Distribution",key.c_str()),
+			       Form("%s Station Distribution",key.c_str()),
+			       11,0.5,11.5);
+    } 
+
+    /*
+     *11 Histograms bins are defined as followed:
+     * 1 -> 12
+     * 2 -> 23
+     * 3 -> 34
+     * 4 -> 13
+     * 5 -> 14
+     * 6 -> 24
+     * 7 -> 123
+     * 8 -> 234
+     * 9 -> 124
+     * 10 -> 134
+     * 11 -> 1234
+     */
+    
+    std::stringstream stationcombo;
+    unsigned station;
+    //If station records an event, add to station combo.
+    for( station = 1; station <= 4; ++station ) {
+      const unsigned idx = 4*1+station-1; // RPCb=1
+      if(stubs.count(idx)){
+	stationcombo << station;
+      }
+    }
+    if(stationcombo.str()=="12") _h1StationDistribution[key]->Fill(1);
+    if(stationcombo.str()=="23") _h1StationDistribution[key]->Fill(2);
+    if(stationcombo.str()=="34") _h1StationDistribution[key]->Fill(3);
+    if(stationcombo.str()=="13") _h1StationDistribution[key]->Fill(4);
+    if(stationcombo.str()=="14") _h1StationDistribution[key]->Fill(5);
+    if(stationcombo.str()=="24") _h1StationDistribution[key]->Fill(6);
+    if(stationcombo.str()=="123") _h1StationDistribution[key]->Fill(7);
+    if(stationcombo.str()=="234") _h1StationDistribution[key]->Fill(8);
+    if(stationcombo.str()=="124") _h1StationDistribution[key]->Fill(9);
+    if(stationcombo.str()=="134") _h1StationDistribution[key]->Fill(10);
+    if(stationcombo.str()=="1234") _h1StationDistribution[key]->Fill(11);
+
+    return;
+}
 
 
 //define this as a plug-in
