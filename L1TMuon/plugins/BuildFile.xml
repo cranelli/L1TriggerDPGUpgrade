@@ -1,0 +1,10 @@
+<library file="*.cc" name="L1TriggerDPGUpgradeL1TMuonPlugins"> 
+  <use name="L1TriggerDPGUpgrade/L1TMuon"/>
+  <use name="L1Trigger/DTTrackFinder"/>
+  <use name="FWCore/ServiceRegistry"/>  
+  <use name="CommonTools/UtilAlgos"/>
+  <use name="DataFormats/HepMCCandidate"/>
+  <use name="CommonTools/Utils"/>
+  <use name="roottmva"/>
+  <flags EDM_PLUGIN="1"/>
+</library>

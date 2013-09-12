@@ -1,0 +1,8 @@
+.git
+*.pyc
+__init__.py
+*~
+*.root
+*.txt
+\#*\#
+*.generated
