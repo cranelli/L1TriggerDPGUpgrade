@@ -441,6 +441,27 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
 				  ho_recoEta,ho_recoPhi,
 				  "proptruth-HORecowSiPM");
 
+	  //Look at HO_Reco events associated and unassociated with a propagated truth muon
+	  
+	  if(std::abs(ho_recoEta - prop_ho.globalPosition().eta()) < 0.087/2
+	     && std::abs(ho_recoPhi - prop_ho.globalPosition().phi()) < 0.087/2){
+	    fillEnergyHistograms(bho_reco->energy(),
+				 "Ho_RecowSiPM_AssociatedTruth");
+	    fillDeltaEtaPhiHistograms(prop_ho.globalPosition().eta(),
+				      prop_ho.globalPosition().phi(),
+				      ho_recoEta,ho_recoPhi,
+				      "proptruth-HORecowSiPM_AssociatedTruth");
+	  }
+	  //Unassocaiated
+	  else{
+	    fillEnergyHistograms(bho_reco->energy(),
+				 "Ho_RecowSiPM_UnAssociatedTruth");
+	    fillDeltaEtaPhiHistograms(prop_ho.globalPosition().eta(),
+				      prop_ho.globalPosition().phi(),
+				      ho_recoEta,ho_recoPhi,
+				      "proptruth-HORecowSiPM_UnAssociatedTruth");
+	  }
+	  
 	  //Make a second selection cut on the energy > 0.5
 	  if(bho_reco->energy() > 0.5){
 	    fillDeltaEtaPhiHistograms(btruth->eta(),btruth->phi(),
