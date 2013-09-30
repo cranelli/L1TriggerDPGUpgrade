@@ -167,7 +167,10 @@ private:
   void filldPhiPtHistograms(float phi1, float pt, float phi2, std::string key);
   void fillEnergyHistograms(float energy, std::string key);
   //bool IsaSiPM(const HORecHit * bho_reco);
-  bool IsaSiPM(double eta, double phi);
+  //bool IsaSiPM(double eta, double phi);
+  bool IsaSiPM(int ieta, int iphi); 
+  double WrapCheck(double phi1, double phi2);
+  void ConvertetaphitoHOietaiphi(double eta, double phi, int & ieta, int & iphi);
   void fillStationDistributionHistograms(TriggerPrimitiveStationMap stubs, std::string key);
   void fillMapHistograms(float eta, float phi,
 			 int ieta, int iphi,
@@ -366,7 +369,7 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
 					       btruth->pz()),
 				  btruth->charge(),
 				  &*bField);
-    //For the HO
+    
     TrajectoryStateOnSurface prop_ho = 
       shProp->propagate(initial,*_hoCyl);
     TrajectoryStateOnSurface prop_rpc[4];
@@ -375,22 +378,30 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
     }
 
     //See how many truth muons go through SiPM sectors after propogation.
+    //First need to convert to ieta and iphi.
+
+    double prop_ho_eta, prop_ho_phi;
+    prop_ho_eta = prop_ho.globalPosition().eta();
+    prop_ho_phi = prop_ho.globalPosition().phi();
+
+    int prop_ho_ieta, prop_ho_iphi;
+    ConvertetaphitoHOietaiphi(prop_ho_eta, prop_ho_phi, prop_ho_ieta, prop_ho_iphi);
     
-    if(IsaSiPM(prop_ho.globalPosition().eta(), prop_ho.globalPosition().phi())){
+    //if(IsaSiPM(prop_ho.globalPosition().eta(), prop_ho.globalPosition().phi())){
+    if(IsaSiPM(prop_ho_ieta, prop_ho_iphi)){
       //Propogated eta and phi, truth pt
-      fillKinematicHistograms(prop_ho.globalPosition().eta(),
-			      prop_ho.globalPosition().phi(),
+      fillKinematicHistograms(prop_ho_eta,
+			      prop_ho_phi,
 			      btruth->pt(),
 			      "truth_prop_ho-SiPMSector");
       
-      fillMapHistograms(prop_ho.globalPosition().eta(), 
-			prop_ho.globalPosition().phi(), 
-			0, 0, 0, 0,
+      fillMapHistograms(prop_ho_eta, prop_ho_phi, 
+			prop_ho_ieta, prop_ho_iphi,
+			0, 0,
 			"Truth_prop_ho-SiPMSector");
     }
 
-	
-
+       
     /*
      * Work with the HO_reco
      */
@@ -407,102 +418,23 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
       double ho_recoy = caloGeo->getPosition(bho_reco->id()).y();
       int ho_recoieta = bho_reco->id().ieta();
       int ho_recoiphi = bho_reco->id().iphi();
-      
+
 
       // Lets fill some Reconstructed HO Histograms
 
       fillEnergyHistograms(bho_reco->energy(),"Ho_Reco");
 
+      /*
       fillDeltaEtaPhiHistograms(btruth->eta(),btruth->phi(),
 				ho_recoEta,ho_recoPhi,
 				"truth-Ho_Reco");
       filldPhiPtHistograms(btruth->phi(),btruth->pt(), 
 			   ho_recoPhi,
 			   "truth-HOReco");
-      if (prop_ho.isValid())
-	fillDeltaEtaPhiHistograms(prop_ho.globalPosition().eta(),
-				  prop_ho.globalPosition().phi(),
-				  ho_recoEta,ho_recoPhi,
-				  "proptruth-HOReco");
-      
-      
-      // Select out only HO's with SIPMS
-      if(IsaSiPM(ho_recoEta, ho_recoPhi)){
-	  fillDeltaEtaPhiHistograms(btruth->eta(),btruth->phi(),
-				ho_recoEta,ho_recoPhi,
-				"truth-Ho_RecowSiPM");
-	  fillEnergyHistograms(bho_reco->energy(),"Ho_RecowSiPM");
-	  fillMapHistograms(ho_recoEta, ho_recoPhi, 
-			    ho_recoieta, ho_recoiphi, ho_recox, ho_recoy,
-			    "HORecoWithSiPM");
-	  //Use Propogated Truth Particles
-	  fillDeltaEtaPhiHistograms(prop_ho.globalPosition().eta(),
-				  prop_ho.globalPosition().phi(),
-				  ho_recoEta,ho_recoPhi,
-				  "proptruth-HORecowSiPM");
+      */
 
-	  //Look at HO_Reco events associated and unassociated with a propagated truth muon
-	  
-	  if(std::abs(ho_recoEta - prop_ho.globalPosition().eta()) < 0.087/2
-	     && std::abs(ho_recoPhi - prop_ho.globalPosition().phi()) < 0.087/2){
-	    fillEnergyHistograms(bho_reco->energy(),
-				 "Ho_RecowSiPM_AssociatedTruth");
-	    fillDeltaEtaPhiHistograms(prop_ho.globalPosition().eta(),
-				      prop_ho.globalPosition().phi(),
-				      ho_recoEta,ho_recoPhi,
-				      "proptruth-HORecowSiPM_AssociatedTruth");
-	  }
-	  //Unassocaiated
-	  else{
-	    fillEnergyHistograms(bho_reco->energy(),
-				 "Ho_RecowSiPM_UnAssociatedTruth");
-	    fillDeltaEtaPhiHistograms(prop_ho.globalPosition().eta(),
-				      prop_ho.globalPosition().phi(),
-				      ho_recoEta,ho_recoPhi,
-				      "proptruth-HORecowSiPM_UnAssociatedTruth");
-	  }
-	  
-	  //Make a second selection cut on the energy > 0.5
-	  if(bho_reco->energy() > 0.5){
-	    fillDeltaEtaPhiHistograms(btruth->eta(),btruth->phi(),
-				      ho_recoEta,ho_recoPhi,
-				      "truth-Ho_RecowSiPM_EnergySelection");
-	    fillEnergyHistograms(bho_reco->energy(),"Ho_RecowSiPM_EnergySelection");
-	    filldPhiPtHistograms(btruth->phi(),btruth->pt(), 
-				 ho_recoPhi,
-				 "truth-HORecowSiPM_EnergySelection");
-	    //Use Propogated Truth Particles
-	    fillDeltaEtaPhiHistograms(prop_ho.globalPosition().eta(),
-				      prop_ho.globalPosition().phi(),
-				      ho_recoEta,ho_recoPhi,
-				      "proptruth-HORecowSiPM_EnergySelection");
-	    /*
-	     * After the two main selection cuts, 
-	     * see which ones are associated with real muons.
-	     * Condition that they are in the same tile, muon was propogated to.
-	     */
-	    // Check if propogated muon and generated muon are in the same tile
-	    if(std::abs(ho_recoEta - prop_ho.globalPosition().eta()) < 0.087/2
-	       && std::abs(ho_recoPhi - prop_ho.globalPosition().phi()) < 0.087/2){
-	      fillEnergyHistograms(bho_reco->energy(),
-				   "Ho_RecowSiPM_EnergySelection_AssociatedTruth");
-	      fillDeltaEtaPhiHistograms(prop_ho.globalPosition().eta(),
-					prop_ho.globalPosition().phi(),
-					ho_recoEta,ho_recoPhi,
-					"proptruth-HORecowSiPM_EnergySelection_AssociatedTruth");
-	    }
-	    else{
-	      fillEnergyHistograms(bho_reco->energy(),
-				   "Ho_RecowSiPM_EnergySelection_NoAssociatedTruth");
-	      fillDeltaEtaPhiHistograms(prop_ho.globalPosition().eta(),
-					prop_ho.globalPosition().phi(),
-					ho_recoEta,ho_recoPhi,
-					"proptruth-HORecowSiPM_EnergySelection_NoAssociatedTruth");
-	    }
-	  }
-	}	   
-      
       // Make Selection Cuts on the Energy (Only events > 0.5)
+      /*
       if(bho_reco->energy() > 0.5){
 	fillDeltaEtaPhiHistograms(btruth->eta(),btruth->phi(),
 				  ho_recoEta,ho_recoPhi,
@@ -511,9 +443,165 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
 			     ho_recoPhi,
 			     "truth-HOReco_EnergySelection");
       }
-    }
+      */
 
-    /*
+      /*
+       * Incorporate Propogated Muon Position into Histograms
+       */
+
+      if (prop_ho.isValid()){
+	fillDeltaEtaPhiHistograms(prop_ho_eta,prop_ho_phi,
+				  ho_recoEta,ho_recoPhi,
+				  "proptruth-HOReco");
+	
+	/*
+	 * Have included HORecoEnergySelection map
+	 * as a quick consistency check that the SiPMs
+	 * are in fact where the documentation says they are.  Should look
+	 * inside the code.
+	 */
+	
+	if(bho_reco->energy() > 0.4){
+	  fillMapHistograms(ho_recoEta, ho_recoPhi, 
+			    ho_recoieta, ho_recoiphi, ho_recox, ho_recoy,
+			    "HORecoEnergySelection");
+	}
+	
+	// Select out only HO's with SIPMS
+	if(IsaSiPM(ho_recoieta, ho_recoiphi)){
+	  /*
+	  fillDeltaEtaPhiHistograms(btruth->eta(),btruth->phi(),
+				    ho_recoEta,ho_recoPhi,
+				    "truth-Ho_RecowSiPM");
+	  */
+	  fillEnergyHistograms(bho_reco->energy(),"Ho_RecowSiPM");
+	  fillMapHistograms(ho_recoEta, ho_recoPhi, 
+			    ho_recoieta, ho_recoiphi, ho_recox, ho_recoy,
+			    "HORecoWithSiPM");
+
+	  //Use Propogated Truth Particles that pass through a SiPM
+	  if(IsaSiPM(prop_ho_ieta, prop_ho_iphi)){ 
+	    fillDeltaEtaPhiHistograms(prop_ho_eta,
+				      prop_ho_phi,
+				      ho_recoEta,ho_recoPhi,
+				      "proptruth-HORecowSiPM");
+	    
+	    //Look at HO_Reco events associated and unassociated with a propagated truth muon
+	  
+	    //Associated
+	    if(std::abs(ho_recoEta - prop_ho_eta) < 0.087/2
+	       && std::abs(ho_recoPhi - prop_ho_phi) < 0.087/2){
+	      fillEnergyHistograms(bho_reco->energy(),
+				 "HO_RecowSiPM_AssociatedTruth");
+	      fillDeltaEtaPhiHistograms(prop_ho_eta,prop_ho_phi,
+					ho_recoEta,ho_recoPhi,
+					"proptruth-HORecowSiPM_AssociatedTruth");
+	      fillMapHistograms(ho_recoEta, ho_recoPhi, 
+				ho_recoieta, ho_recoiphi, ho_recox, ho_recoy,
+				"HORecoWithSiPM_AssociatedTruth");
+	    }
+	    //Unassocaiated
+	    else{
+	      /*
+	      std::cout <<"For my unassociated events I have," << std::endl
+			<< "prop_eta = " << prop_ho_eta << " prop_phi = " << prop_ho_phi << std::endl
+			<< "ho_eta = " << ho_recoEta << "and ho_phi = "  << ho_recoPhi << std::endl 
+			<< "With an eta difference of: " << prop_ho_eta - ho_recoEta << std::endl
+			<< "and a phi difference of: " << prop_ho_phi - ho_recoPhi << std::endl;
+	      //<< "and the check that Prop is a SiPM:" << IsaSiPM(prop_ho_eta, prop_ho_phi)
+	      */
+	      fillEnergyHistograms(bho_reco->energy(),
+				   "HO_RecowSiPM_NoAssociatedTruth");
+	      fillDeltaEtaPhiHistograms(prop_ho_eta, prop_ho_phi,
+					ho_recoEta, ho_recoPhi,
+				      "proptruth-HORecowSiPM_NoAssociatedTruth");
+	      
+	      fillMapHistograms(ho_recoEta, ho_recoPhi, 
+				ho_recoieta, ho_recoiphi, ho_recox, ho_recoy,
+				"HORecoWithSiPM_NoAssociatedTruth");
+	    }
+	  
+	    //Make a second selection cut on the energy > 0.4
+	    if(bho_reco->energy() > 0.4){
+	      
+	      /*
+	      fillDeltaEtaPhiHistograms(btruth->eta(),btruth->phi(),
+	      ho_recoEta,ho_recoPhi,
+	      "truth-Ho_RecowSiPM_EnergySelection");
+	      fillEnergyHistograms(bho_reco->energy(),"Ho_RecowSiPM_EnergySelection");
+	      filldPhiPtHistograms(btruth->phi(),btruth->pt(), 
+				 ho_recoPhi,
+				 "truth-HORecowSiPM_EnergySelection");
+	      */
+	      //Compare to Propogated Truth Particles
+	      fillDeltaEtaPhiHistograms(prop_ho_eta,
+					prop_ho_phi,
+					ho_recoEta,ho_recoPhi,
+					"proptruth-HORecowSiPM_EnergySelection");
+	      /*
+	       * After the two main selection cuts, 
+	       * see which ones are associated with real muons.
+	       * Condition that they are in the same tile, muon was propogated to.
+	       */
+	      // Check if propogated muon and generated muon are in the same tile
+	      
+	      /*
+	      if(std::abs(ho_recoEta - prop_ho_eta) < 0.087/2
+	      && std::abs(ho_recoPhi - prop_ho_phi) < 0.087/2){
+	      fillEnergyHistograms(bho_reco->energy(),
+	      "Ho_RecowSiPM_EnergySelection_AssociatedTruth");
+	      fillDeltaEtaPhiHistograms(prop_ho_eta,
+					  prop_ho_phi,
+					  ho_recoEta,ho_recoPhi,
+					  "proptruth-HORecowSiPM_EnergySelection_AssociatedTruth");
+					  }
+					  else{
+					  fillEnergyHistograms(bho_reco->energy(),
+					  "Ho_RecowSiPM_EnergySelection_NoAssociatedTruth");
+	      fillDeltaEtaPhiHistograms(prop_ho_eta,
+	      prop_ho_phi,
+	      ho_recoEta,ho_recoPhi,
+	      "proptruth-HORecowSiPM_EnergySelection_NoAssociatedTruth");
+	      }
+	      
+	      */
+	      
+	      /*
+	       * After the two main selection cuts.
+	       */
+	      
+	      /*
+	       * To account for the edge effects of muons propagated to one tile,
+	       * but depositing their energy in a neighboring tile, make a loose
+	       * cut on associated events.
+	       */
+	      
+	      //Width in eta and phi of Loosely Associated Events
+	      double LooseAssoc_BoxWidth = 1.5*0.087;  //Includes all neighboring tiles.
+	      if(std::abs(ho_recoEta - prop_ho_eta) < LooseAssoc_BoxWidth/2 
+		 && std::abs(ho_recoPhi - prop_ho_phi) < LooseAssoc_BoxWidth/2){ 
+		fillEnergyHistograms(bho_reco->energy(),
+				     "Ho_RecowSiPM_EnergySelection_LooseAssocProp");
+		fillDeltaEtaPhiHistograms(prop_ho_eta,
+					  prop_ho_phi,
+					  ho_recoEta,ho_recoPhi,
+					  "PropwSiPM-HORecowSiPM_EnergySelect_LooseAssoc");
+	      } else {
+		
+		fillEnergyHistograms(bho_reco->energy(),
+				     "Ho_RecowSiPM_EnergySelection_LooseNoAssocProp");
+		fillDeltaEtaPhiHistograms(prop_ho_eta,
+					  prop_ho_phi,
+					  ho_recoEta,ho_recoPhi,
+					  "PropwSiPM-HORecowSiPM_EnergySelect_LooseNoAssoc");
+	      }
+	    }
+	  }
+	}
+      }
+    }
+  
+  /*
      * Start with the RPC
      */
     
@@ -820,7 +908,7 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
 	} // end loop on HCAL TP
       } // end loop on DTTF
     } // end loop on RPC
-  } // end loop on truth or global
+    } // end loop on truth or global
 
     //Count of Truth Muons going through HO sectors with SiPMs
     
@@ -834,7 +922,7 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
   if (foundHcal)  _counters->Fill(HCAL);
   if (foundStdMu) _counters->Fill(STDMU);
 
-}
+  }
 
 
 // ------------ method called once each job just before starting event loop  ------------
@@ -976,7 +1064,7 @@ void L1TMuonCaloInspector::fillDeltaEtaPhiHistograms(float eta1, float phi1,
       _fileService->make<TH1F>(Form("dphi_%s",key.c_str()),
 			       Form("#Delta#phi %s",key.c_str()),
 			       500,-M_PI/10.,M_PI/10.);
-  _h1dDeltaPhi[key]->Fill(phi1-phi2);
+  _h1dDeltaPhi[key]->Fill(WrapCheck(phi1,phi2));
   
   if(!_h1dDeltaR.count(key))
     _h1dDeltaR[key] = 
@@ -990,10 +1078,10 @@ void L1TMuonCaloInspector::fillDeltaEtaPhiHistograms(float eta1, float phi1,
       _fileService->make<TH2F>(Form("detaphi_%s",key.c_str()),
 			       Form("#Delta#phi vs. #Delta#eta %s",
 				    key.c_str()),
-			       500,-0.5,0.5,
-			       500,-M_PI/10.,M_PI/10.);
+			       500,-1.3,1.3,
+			       500,-M_PI,M_PI);
   _h2dDeltaEtaPhi[key]->Fill(eta1-eta2,
-			     phi1-phi2);
+			     WrapCheck(phi1,phi2));
   
   return;
 }
@@ -1017,8 +1105,8 @@ if(!_h2diEtaiPhi.count(key))
       _fileService->make<TH2F>(Form("ietaiphi_%s",key.c_str()),
 			       Form("iphi vs. ieta %s",
 				    key.c_str()),
-			       500,-15,15,
-			       500,-0,72);
+			       30,-15,15,
+			       72,-0,72);
   _h2diEtaiPhi[key]->Fill(ieta,iphi);
 
   if(!_h2dXY.count(key))
@@ -1044,7 +1132,7 @@ void L1TMuonCaloInspector::filldPhiPtHistograms(float phi1, float pt,
 				    key.c_str()),
 			       500,0,200,
 			       500,-M_PI/10,M_PI/10);
-  _h2dDeltaPhiPt[key]->Fill(pt, phi1-phi2);
+  _h2dDeltaPhiPt[key]->Fill(pt, WrapCheck(phi1,phi2));
   
   return;
 }
@@ -1097,21 +1185,59 @@ void L1TMuonCaloInspector::fillEnergyHistograms(float energy, std::string key){
   _h1Energy[key]->Fill(energy);
 }
 
+/*
+ * When subtracting 2 phi's, checks to make sure it is not accidently
+ * wrapping around the unit circle.  Returns delta phi
+ */
+double L1TMuonCaloInspector::WrapCheck(double phi1, double phi2){
+  double delta_phi = phi1 - phi2;
+  if(delta_phi < -M_PI){
+    return (2*M_PI + delta_phi);
+  }
+  if(delta_phi > M_PI){
+    return (delta_phi - 2*M_PI);
+  }
+  return delta_phi;
+}
+ 
 
 // Example of how to pass the HORecHit object
 //bool L1TMuonCaloInspector::IsaSiPM(const HORecHit * bho_rec){
-
-bool L1TMuonCaloInspector::IsaSiPM(double eta, double phi){
-  //int ieta = bho_reco->id().ieta();
-  //int iphi = bho_reco->id().iphi();
+ 
+bool L1TMuonCaloInspector::IsaSiPM(int ieta, int iphi){
+ 
   //Sectors 9 and 10 in YB1
   //  5 <= ieta <= 10, end of eta range  = ieta * 0.087
   // 47 <= iphi <= 58, end of  phi range  = iphi * 0.087 for iphi <= 36 
   //                                   and -pi + (iphi-36)*0.087 for iphi > 36
-  if(eta >= (5-1)*0.087 && eta <= (10)*0.087){
-    if(phi >= -M_PI+(47-36-1)*(2*M_PI/72) && phi <= -M_PI+(58-36)*(2*M_PI/72)){
+  if(ieta >= 5 && ieta <= 10){
+    if(iphi >= 47 && iphi <= 58){
       return true;
     }
+  }
+  //Sectors 11 and 12 in YB2
+  //  11 <= ieta <= 15, end of eta range  = ieta * 0.087
+  // 59 <= iphi <= 70, end of  phi range  = iphi * 0.087 for iphi <= 36 
+  //                                   and -pi + (iphi-36)*0.087 for iphi > 36
+  if(ieta >= 11 && ieta <= 15){
+    if(iphi >= 59 && iphi <= 70){
+      return true;
+    }
+  }
+  return false;
+}
+/*
+bool L1TMuonCaloInspector::IsaSiPM(double eta, double phi){
+//int ieta = bho_reco->id().ieta();
+//int iphi = bho_reco->id().iphi();
+//Sectors 9 and 10 in YB1
+//  5 <= ieta <= 10, end of eta range  = ieta * 0.087
+// 47 <= iphi <= 58, end of  phi range  = iphi * 0.087 for iphi <= 36 
+//                                   and -pi + (iphi-36)*0.087 for iphi > 36
+  if(eta >= (5-1)*0.087 && eta <= (10)*0.087){
+  if(phi >= -M_PI+(47-36-1)*(2*M_PI/72) && phi <= -M_PI+(58-36)*(2*M_PI/72)){
+  return true;
+  }
   }
   //Sectors 11 and 12 in YB2
   //  11 <= ieta <= 15, end of eta range  = ieta * 0.087
@@ -1124,17 +1250,43 @@ bool L1TMuonCaloInspector::IsaSiPM(double eta, double phi){
   }
   return false;
 }
+*/
 
-   void L1TMuonCaloInspector::fillStationDistributionHistograms(TriggerPrimitiveStationMap stubs, std::string key){
+/*
+ * Takes a give eta and phi position
+ * Converts them to the associated ieta and iphi values of the HO.
+ * passes back by reference.
+ */
+
+void L1TMuonCaloInspector::ConvertetaphitoHOietaiphi(double eta, double phi, int & ieta, int & iphi){
+  if(eta >= 0){
+    ieta =  1+eta/0.087 +1;
+    //std::cout << "eta of " << eta << "gives ieta of " << ieta << std::endl;
+  }
+  else{
+    ieta = -1 + eta/0.087;
+    //std::cout << "eta of " << eta << "gives ieta of " << ieta << std::endl;
+  }
+  if(phi >=0){
+    iphi = 1+ 72*phi/(2*M_PI);
+    //std::cout << "phi of " << phi << "gives iphi of " << iphi << std::endl;
+  }
+  else{
+    iphi = 1+ 72*(2*M_PI+phi)/(2*M_PI);
+    //std::cout << "phi of " << phi << "gives iphi of " << iphi << std::endl;
+  }
+}
+
+void L1TMuonCaloInspector::fillStationDistributionHistograms(TriggerPrimitiveStationMap stubs, std::string key){
   if(!_h1StationDistribution.count(key)){
-      _h1StationDistribution[key] = 
-	_fileService->make<TH1F>(Form("%s_Station_Distribution",key.c_str()),
+    _h1StationDistribution[key] = 
+      _fileService->make<TH1F>(Form("%s_Station_Distribution",key.c_str()),
 			       Form("%s Station Distribution",key.c_str()),
-			       11,0.5,11.5);
-    } 
+				   11,0.5,11.5);
+  } 
 
-    /*
-     *11 Histograms bins are defined as followed:
+  /*
+   *11 Histograms bins are defined as followed:
      * 1 -> 12
      * 2 -> 23
      * 3 -> 34
