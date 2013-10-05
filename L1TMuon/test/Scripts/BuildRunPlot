@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# Script for HO L1Muon trigger work.  Builds,
+# runs, and plots.
+
+# Must cmsenv before using script
+
+#L1TriggerDPGUpgrade;  #Why don't aliases work within a script?
+cd; cd public/HO_Muon/CMSSW_6_2_0_pre5/src/L1TriggerDPGUpgrade;
+scram b -j4;
+cd L1TMuon/test/;
+cmsRun run_CaloInspector_cfg.py;
+cp *.root RootFiles/.
+cd Macros/;
+root -l caloInspectorPlotter.C;
