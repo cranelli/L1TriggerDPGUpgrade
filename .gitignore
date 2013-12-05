@@ -3,6 +3,10 @@ CVS
 __init__.py
 *~
 *.root
+*.png
 *.txt
+*.stdout
+*.stderr
+*.condor
 \#*\#
 *.generated
