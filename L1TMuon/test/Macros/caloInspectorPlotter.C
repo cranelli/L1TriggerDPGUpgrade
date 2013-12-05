@@ -27,7 +27,7 @@ void plotCreator2D(TFile* file, const char* name,
 		   int num_xbinmerge=5, int num_ybinmerge=5);
 
 void caloInspectorPlotter(const char * file = 
-			  "../RootFiles/L1ITMuPM_caloInspector_New.root") {
+			  "../RootFiles/L1ITMuonPM_14Pt_caloInspector_New.root") {
 
   TFile * inFile = TFile::Open(file);
 
