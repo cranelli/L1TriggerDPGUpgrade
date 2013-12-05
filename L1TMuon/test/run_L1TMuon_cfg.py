@@ -15,7 +15,8 @@ process.load('L1TriggerDPGUpgrade.L1TMuon.L1TMuon_cff')
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:mc', '')
 
-infile = ['file:SingleMuPMFlatPt_FullBarrel_GEN_SIM_DIGI_L1_RECO.root']
+infile = ['file:SingleMu14Pt_Barrel_GEN_SIM_DIGI_L1_RECO.root']
+#infile = ['file:SingleMuPMFlatPt_FullBarrel_GEN_SIM_DIGI_L1_RECO.root']
 #infile = ['file:SingleMuFlatPt_FullBarrel_GEN_SIM_DIGI_L1_RECO.root']
 #infile = ['file:SingleMuFlatPt_50GeV_GEN_SIM_DIGI_L1_RECO.root']
 #infile = ['file:SingleMuFlatPt_5GeVto200GeV_GEN_SIM_DIGI_L1_RECO_100ev.root']
@@ -78,7 +79,7 @@ process.FEVTDEBUGoutput = cms.OutputModule(
     splitLevel = cms.untracked.int32(0),
     eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
     outputCommands = outCommands,
-    fileName = cms.untracked.string('L1TMuonPM_FlatPt_FullBarrel.root'),
+    fileName = cms.untracked.string('L1TMuonSingleMu_14Pt_FullBarrel.root'),
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
         dataTier = cms.untracked.string('')

@@ -30,8 +30,12 @@ process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:mc', '')
 
 process.TFileService = cms.Service(
     "TFileService",
-    fileName=cms.string('L1ITMuPM_caloInspector_New.root')
+    fileName=cms.string('L1ITMuonSingleMu_14Pt_caloInspector_New.root')
     )
+
+process.maxEvents = cms.untracked.PSet(
+        input = cms.untracked.int32(10000)
+        )
 
 process.L1TMuonCaloInsp = cms.EDAnalyzer(
     'L1TMuonCaloInspector',
@@ -49,7 +53,7 @@ process.L1TMuonCaloInsp = cms.EDAnalyzer(
     dRdttfToStdMu = cms.untracked.double(99.0)  #0.2)
 )
 
-infile = 'file:L1TMuonPM_FlatPt_FullBarrel.root'
+infile = 'file:L1TMuonSingleMu_14Pt_FullBarrel.root'
 
 process.source = cms.Source(
     'PoolSource',
