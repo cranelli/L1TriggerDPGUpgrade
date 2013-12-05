@@ -1,0 +1,4 @@
+Usage: edmConfigDump <file> : expand this python configuration
+
+Options:
+  -h, --help  show this help message and exit
