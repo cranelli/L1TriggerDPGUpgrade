@@ -12,8 +12,7 @@
      [Notes on implementation]
 */
 //
-// Original Author:  Alberto Belloni
-//     Modified by:  Christopher Anelli
+// Author: Christopher Anelli
 //         Created:  Wed, 12 Jun 2013 16:42:12 GMT
 // $Id$
 //
@@ -82,7 +81,10 @@
 #include "TH1F.h"
 #include "TH2F.h"
 
+#include <vector>
+
 using namespace L1TMuon;
+using namespace std;
 
 //
 // class declaration
@@ -130,7 +132,7 @@ private:
   // map with histograms: all deltaEta and deltaPhi plots will
   // have same boundaries (very generous), then work out useful
   // ranges with plotting macro
-
+  
   std::map<std::string,TH1F*> _h1Eta;
   std::map<std::string,TH1F*> _h1Phi;
   std::map<std::string,TH1F*> _h1Pt;
@@ -153,14 +155,48 @@ private:
   std::map<std::string,TH1F*> _h1Energy;
   std::map<std::string,TH2F*> _h2dDeltaPhiPt;
 
+
+  //TTree Variables
+
+  TTree *ho_muon_tree;
+  //  Float_t Generator_Phi, Generator_Eta, Generator_Pt;
+  //Float_t Propagator_Phi, Propagator_Eta;
+  //bool Propagator_IsaSiPM;
+  
+  //Generated particles are placed in a vector.
+
+  std::vector<int> *vec_generator_pdgId;
+  std::vector<Float_t> *vec_generator_etas;
+  std::vector<Float_t> * vec_generator_phis;
+  std::vector<Float_t> * vec_generator_pts;
+  
+  //Propagated particles are placed in a vector
+  
+  std::vector<Float_t> * vec_propagator_etas;
+  std::vector<Float_t> * vec_propagator_phis;
+  std::vector<bool> * vec_propagator_IsaSiPMs;
+
+  //Propagated particles are placed in a vector.
+
+  
+  //Triggers are placed in a vector
+  std::vector<Float_t> *vec_trigger_etas;
+  std::vector<Float_t> *vec_trigger_phis;
+  std::vector<Float_t> *vec_trigger_energies;
+  std::vector<bool> *vec_trigger_IsaSiPMs;
+
+  bool IsaSiPM(int ieta, int iphi);
+  double WrapCheck(double phi1, double phi2);
+  void ConvertetaphitoHOietaiphi(double eta, double phi, int & ieta, int & iphi);
+
   TH1F* _counters;
   enum { ALL=0, TRUTH, RPC, DTTF, HCAL, STDMU, GLBMU };
   
   TriggerPrimitiveRef getBestTriggerPrimitive
   (const TriggerPrimitiveList& list, unsigned subsystem) const;
 
-
-
+  
+  /*
   void fillDeltaEtaPhiHistograms(float eta1, float phi1,
 				 float eta2, float phi2,
 				 std::string key);
@@ -168,9 +204,7 @@ private:
   void fillEnergyHistograms(float energy, std::string key);
   //bool IsaSiPM(const HORecHit * bho_reco);
   //bool IsaSiPM(double eta, double phi);
-  bool IsaSiPM(int ieta, int iphi); 
-  double WrapCheck(double phi1, double phi2);
-  void ConvertetaphitoHOietaiphi(double eta, double phi, int & ieta, int & iphi);
+  
   void fillStationDistributionHistograms(TriggerPrimitiveStationMap stubs, std::string key);
   void fillMapHistograms(float eta, float phi,
 			 int ieta, int iphi,
@@ -178,8 +212,37 @@ private:
 			 std::string key);
   void fillKinematicHistograms(float eta, float phi, float pt,
 			       std::string key);
+  */
+
   // ----------member data ---------------------------
 };
+
+
+/*
+ * HO Event Class, to organize data relevant to the HO Muon analysis, and store
+ * it in a root Tree.
+ */
+
+/*
+class HOEvent {
+private: 
+  Double_t Generator_Phi, Generator_Eta, Generator_Pt;
+public:
+  //Constructor
+  HOEvent();
+  //Set Members
+  void setGenerators(Double_t phi, Double_t eta, Double_t pt){
+    Generator_Phi = phi;
+    Generator_Eta = eta;
+    Generator_Pt = pt;
+  }
+
+  //Access Members
+  Double_t getGenerator_Phi(){ return Generator_Phi;}
+  Double_t getGenerator_Eta(){ return Generator_Eta;}
+  Double_t getGenerator_Pt(){return Generator_Pt;}
+};
+*/
 
 //
 // constants, enums and typedefs
@@ -192,9 +255,7 @@ private:
 //
 // constructors and destructor
 //
-L1TMuonCaloInspector::L1TMuonCaloInspector(const edm::ParameterSet& iConfig)
-
-{
+L1TMuonCaloInspector::L1TMuonCaloInspector(const edm::ParameterSet& iConfig){
   //now do what ever initialization is needed
   if( (_doGen = iConfig.getUntrackedParameter<bool>("doGen",false)) ) {
     _genInput = iConfig.getParameter<edm::InputTag>("genSrc");
@@ -204,14 +265,39 @@ L1TMuonCaloInspector::L1TMuonCaloInspector(const edm::ParameterSet& iConfig)
   _hcalInput =  iConfig.getParameter<edm::InputTag>("hcalSrc");
   _stdmuInput = iConfig.getParameter<edm::InputTag>("stdmuSrc");
   _glbmuInput = iConfig.getParameter<edm::InputTag>("glbmuSrc");
-
+  
   _dRtruthToRpc =iConfig.getUntrackedParameter<double>("dRtruthToRpc" ,1.);
   _dRrpcToDttf  =iConfig.getUntrackedParameter<double>("dRrpcToDttf"  ,1.);
   _dRdttfToHcal =iConfig.getUntrackedParameter<double>("dRdttfToHcal" ,1.);
   _dRhcalToStdMu=iConfig.getUntrackedParameter<double>("dRhcalToStdMu",1.);
   _dRdttfToStdMu=iConfig.getUntrackedParameter<double>("dRdttfToStdMu",1.);
-
+  
   _counters = _fileService->make<TH1F>("counter","counters",10,-0.5,9.5);
+
+  ho_muon_tree = _fileService->make<TTree>("ho_muon_tree", "Generator, Propagator, and Trigger Data");
+
+  /*
+  ho_muon_tree->Branch("Generator_Phi", &Generator_Phi, "Generator_Phi/F");
+  ho_muon_tree->Branch("Generator_Eta", &Generator_Eta, "Generator_Eta/F");
+  ho_muon_tree->Branch("Generator_Pt", &Generator_Pt, "Generator_Pt/F");
+  ho_muon_tree->Branch("Propagator_Phi", &Propagator_Phi, "Propagator_Phi/F");
+  ho_muon_tree->Branch("Propagator_Eta", &Propagator_Eta, "Propagator_Eta/F");
+  ho_muon_tree->Branch("Propagator_IsaSiPM", &Propagator_IsaSiPM, "PropagatorHO_IsaSiPM/O");
+  */
+
+  ho_muon_tree->Branch("Generator_pdgId", "std::vector<int>",&vec_generator_pdgId);
+  ho_muon_tree->Branch("Generator_Etas", "std::vector<Float_t>",&vec_generator_etas);
+  ho_muon_tree->Branch("Generator_Phis", "std::vector<Float_t>",&vec_generator_phis);
+  ho_muon_tree->Branch("Generator_Pts", "std::vector<Float_t>",&vec_generator_pts);
+
+  ho_muon_tree->Branch("Propagator_Etas", "std::vector<Float_t>",&vec_propagator_etas);
+  ho_muon_tree->Branch("Propagator_Phis", "std::vector<Float_t>",&vec_propagator_phis);
+  ho_muon_tree->Branch("Propagator_IsaSiPMs", "std::vector<bool>",&vec_propagator_IsaSiPMs);
+
+  ho_muon_tree->Branch("Trigger_Etas", "std::vector<Float_t>",&vec_trigger_etas);
+  ho_muon_tree->Branch("Trigger_Phis", "std::vector<Float_t>",&vec_trigger_phis);
+  ho_muon_tree->Branch("Trigger_Energies", "std::vector<Float_t>",&vec_trigger_energies);
+  ho_muon_tree->Branch("Trigger_IsaSiPMs", "std::vector<bool>",&vec_trigger_IsaSiPMs);
 
   // Build surfaces for extrapolation
   Cylinder::PositionType pos0; // mah, we do not use them, but they are
@@ -326,10 +412,31 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
   // instead of truth muons in the outer loop
   // May have to use good old unsigned int loop on collections
   // instead of nice loop with iterators
-  //auto btruth = _doGen ? truthParticles->cbegin() : globalMuons->cbegin();
+  //auto btruth = _Dogen ? truthParticles->cbegin() : globalMuons->cbegin();
   //auto etruth = _doGen ? truthParticles->cend() : globalMuons->cend();
   //if (_doGen) {
   
+  //Initialize Tree Vectors to 0
+
+  vec_generator_pdgId =0; 
+  vec_generator_etas =0; 
+  vec_generator_phis =0;
+  vec_generator_pts =0;
+  vec_propagator_etas =0; 
+  vec_propagator_phis =0;
+  vec_propagator_IsaSiPMs=0;
+  vec_trigger_etas = 0;
+  vec_trigger_phis = 0;
+  vec_trigger_energies = 0;
+  vec_trigger_IsaSiPMs = 0;
+    
+  delete vec_generator_pdgId; vec_generator_pdgId = new std::vector<int>();
+  delete vec_generator_etas; vec_generator_etas = new std::vector<Float_t>();
+  delete vec_generator_phis; vec_generator_phis = new std::vector<Float_t>();
+  delete vec_generator_pts; vec_generator_pts = new std::vector<Float_t>();
+  delete vec_propagator_etas; vec_propagator_etas = new std::vector<Float_t>();
+  delete vec_propagator_phis; vec_propagator_phis = new std::vector<Float_t>();
+  delete vec_propagator_IsaSiPMs; vec_propagator_IsaSiPMs = new std::vector<bool>();
 
   iEvent.getByLabel(_genInput,truthParticles);
   auto btruth = truthParticles->cbegin();
@@ -338,28 +445,108 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
   //std::cout << "Number of truth particles:"
   //<< truthParticles->size() << std::endl;
 
+  /*
+   *Check to compare generator directions.
+   */
+  //cout << "btruth eta = " << btruth->eta() << endl;
+  //cout << "etruth eta = " << etruth->eta() << endl;
   
   
+
   for( ; btruth != etruth; ++btruth ) {
-    // Initial quality cuts
+    
+    //cout << endl << btruth->pdgId();
+    //cout << btruth->eta()<<endl;
+    //cout << btruth->phi()<<endl;
+    //cout << btruth->pt()<<endl;
+
+    /*******
+     * Initial quality cuts
+     *******/
+    
+    /*
+     *Perhaps need to rethink how we do cuts, since each event has
+     *multiple paritcles.
     if (_doGen) {
       if (std::abs(btruth->pdgId()) != 13 ||
-	  btruth->pt()<20.)
+	  btruth->pt()<14.)
 	continue;
     }
     else {
-      if (btruth->pt()<20.)
+      if (btruth->pt()<14.)
 	continue;
     }
     foundTruth = true;
+    */
+    /*******
+     * Trigger, Propagator, and Generator Data are held together                                                                   
+     * in an already created TTree.                                                                                                
+     *******/
+    
+    /*
+    struct Generator_t{
+      Double_t phi,eta;
+      Double_t pt;
+    };
+    Generator_t Generator;
+    
+    
+    struct Propagator_t{
+      Double_t phi, eta;
+      bool IsaSiPM;
+    };
+    Propagator_t Propagator;
+
+    struct Trigger_t{
+      Double_t phi, eta;
+      Double_t Energy;
+      bool IsaSiPM;
+    };
+    */ 
+
+    /*
+    ho_muon_tree->Branch("Generator", &Generator.phi, "phi/F:eta:pt");
+    ho_muon_tree->Branch("Propagator", &Propagator.phi, "phi/F:eta:IsaSiPM/O");
+    ho_muon_tree->Branch("Triggers", "std::vector<Trigger_t>",&vec_triggers);
+    */
+
+
+    /*
+     * Set Generator Values
+     */
+
+    //Generator_Phi = btruth->phi();
+    //Generator_Eta = btruth->eta();
+    //Generator_Pt = btruth->pt();
+    vec_generator_pdgId->push_back(btruth->pdgId());
+    vec_generator_etas->push_back(btruth->eta());
+    vec_generator_phis->push_back(btruth->phi());
+    vec_generator_pts->push_back(btruth->pt());
+
+    /*
+    Generator.phi = btruth->phi();
+    Generator.eta = btruth->eta();
+    Generator.pt = btruth->pt();
+    */
+
+    //TTree *ho_muon_tree = new TTree("ho_muon_tree", "Generator, Propagator, and Trigger Data");                                     
+    //Generator_Phi = btruth->phi();
+    //ho_muon_tree->Branch("Propagator", &Propagator_t->phi, "phi/F:eta")     
+
+    
 
     //Let us fill some just "truth" histograms.
+    /*
     fillKinematicHistograms(btruth->eta(),btruth->phi(),btruth->pt(),"truth");
     fillMapHistograms(btruth->eta(), btruth->phi(), 
 		      0, 0, 0, 0,
 		      "Truth");
-    //Propogate the truth muons to each of the different detector positions:
+    */
 
+    /*
+     * Set Propagator Values
+     * Propogate the truth muons to each of the different detector positions:
+     */
 
     FreeTrajectoryState initial(GlobalPoint(btruth->vx(),
 					      btruth->vy(),
@@ -373,238 +560,79 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
     TrajectoryStateOnSurface prop_ho = 
       shProp->propagate(initial,*_hoCyl);
     TrajectoryStateOnSurface prop_rpc[4];
+
+    double prop_ho_eta, prop_ho_phi;
+    prop_ho_eta = prop_ho.globalPosition().eta();
+    prop_ho_phi = prop_ho.globalPosition().phi();
+    
+    //Propagator_Eta = prop_ho.globalPosition().eta();
+    //Propagator_Phi = prop_ho.globalPosition().phi();
+    
+    //Propagator.eta = prop_ho.globalPosition().eta();
+    //Propagator.phi = prop_ho.globalPosition().phi();
+
+    int prop_ho_ieta, prop_ho_iphi;
+    ConvertetaphitoHOietaiphi(prop_ho_eta, prop_ho_phi, prop_ho_ieta, prop_ho_iphi); //Passed by reference
+
+    //Propagator_IsaSiPM = IsaSiPM(prop_ho_ieta, prop_ho_iphi);
+    //Propagator.IsaSiPM = IsaSiPM(prop_ho_ieta, prop_ho_iphi);
+
+    
+    vec_propagator_etas->push_back(prop_ho.globalPosition().eta());
+    vec_propagator_phis->push_back(prop_ho.globalPosition().phi());
+    vec_propagator_IsaSiPMs->push_back(IsaSiPM(prop_ho_ieta, prop_ho_iphi));
+
     for(int i = 0; i<4; i++){
       prop_rpc[i] = shProp->propagate(initial,*_rpcCyl[i]);
     }
 
     //See how many truth muons go through SiPM sectors after propogation.
-    //First need to convert to ieta and iphi.
-
-    double prop_ho_eta, prop_ho_phi;
-    prop_ho_eta = prop_ho.globalPosition().eta();
-    prop_ho_phi = prop_ho.globalPosition().phi();
-
-    int prop_ho_ieta, prop_ho_iphi;
-    ConvertetaphitoHOietaiphi(prop_ho_eta, prop_ho_phi, prop_ho_ieta, prop_ho_iphi);
-    
-    //if(IsaSiPM(prop_ho.globalPosition().eta(), prop_ho.globalPosition().phi())){
-    if(IsaSiPM(prop_ho_ieta, prop_ho_iphi)){
-      //Propogated eta and phi, truth pt
-      fillKinematicHistograms(prop_ho_eta,
-			      prop_ho_phi,
-			      btruth->pt(),
-			      "truth_prop_ho-SiPMSector");
-      
-      fillMapHistograms(prop_ho_eta, prop_ho_phi, 
-			prop_ho_ieta, prop_ho_iphi,
-			0, 0,
-			"Truth_prop_ho-SiPMSector");
-    }
-
-       
+    //First need to convert to ieta and iphi.  
+  }
     /*
      * Work with the HO_reco
      */
+
     
-    auto bho_reco = hoRecoHits->begin();
-    auto eho_reco = hoRecoHits->end();
-    //std::cout << "Number of HO Reconstructed Hits:"
-    //<< hoRecoHits->size() <<" ";
-    for( ; bho_reco != eho_reco; ++bho_reco ) {
+  auto bho_reco = hoRecoHits->begin();
+  auto eho_reco = hoRecoHits->end();
+  
+  //std::cout << "Number of HO Reconstructed Hits:"
+  //<< hoRecoHits->size() <<" ";
+  delete vec_trigger_etas; vec_trigger_etas = new std::vector<Float_t>();
+  delete vec_trigger_phis; vec_trigger_phis = new std::vector<Float_t>();
+  delete vec_trigger_energies; vec_trigger_energies = new std::vector<Float_t>();
+  delete vec_trigger_IsaSiPMs; vec_trigger_IsaSiPMs = new std::vector<bool>();
 
-      double ho_recoPhi = caloGeo->getPosition(bho_reco->id()).phi();
-      double ho_recoEta = caloGeo->getPosition(bho_reco->id()).eta();
-      double ho_recox = caloGeo->getPosition(bho_reco->id()).x();
-      double ho_recoy = caloGeo->getPosition(bho_reco->id()).y();
-      int ho_recoieta = bho_reco->id().ieta();
-      int ho_recoiphi = bho_reco->id().iphi();
-
-
-      // Lets fill some Reconstructed HO Histograms
-
-      fillEnergyHistograms(bho_reco->energy(),"Ho_Reco");
-
-      /*
-      fillDeltaEtaPhiHistograms(btruth->eta(),btruth->phi(),
-				ho_recoEta,ho_recoPhi,
-				"truth-Ho_Reco");
-      filldPhiPtHistograms(btruth->phi(),btruth->pt(), 
-			   ho_recoPhi,
-			   "truth-HOReco");
-      */
-
-      // Make Selection Cuts on the Energy (Only events > 0.5)
-      /*
-      if(bho_reco->energy() > 0.5){
-	fillDeltaEtaPhiHistograms(btruth->eta(),btruth->phi(),
-				  ho_recoEta,ho_recoPhi,
-				  "truth-Ho_Reco_EnergySelection");
-	filldPhiPtHistograms(btruth->phi(),btruth->pt(), 
-			     ho_recoPhi,
-			     "truth-HOReco_EnergySelection");
-      }
-      */
-
-      /*
-       * Incorporate Propogated Muon Position into Histograms
-       */
-
-      if (prop_ho.isValid()){
-	fillDeltaEtaPhiHistograms(prop_ho_eta,prop_ho_phi,
-				  ho_recoEta,ho_recoPhi,
-				  "proptruth-HOReco");
-	
-	/*
-	 * Have included HORecoEnergySelection map
-	 * as a quick consistency check that the SiPMs
-	 * are in fact where the documentation says they are.  Should look
-	 * inside the code.
-	 */
-	
-	if(bho_reco->energy() > 0.4){
-	  fillMapHistograms(ho_recoEta, ho_recoPhi, 
-			    ho_recoieta, ho_recoiphi, ho_recox, ho_recoy,
-			    "HORecoEnergySelection");
-	}
-	
-	// Select out only HO's with SIPMS
-	if(IsaSiPM(ho_recoieta, ho_recoiphi)){
-	  /*
-	  fillDeltaEtaPhiHistograms(btruth->eta(),btruth->phi(),
-				    ho_recoEta,ho_recoPhi,
-				    "truth-Ho_RecowSiPM");
-	  */
-	  fillEnergyHistograms(bho_reco->energy(),"Ho_RecowSiPM");
-	  fillMapHistograms(ho_recoEta, ho_recoPhi, 
-			    ho_recoieta, ho_recoiphi, ho_recox, ho_recoy,
-			    "HORecoWithSiPM");
-
-	  //Use Propogated Truth Particles that pass through a SiPM
-	  if(IsaSiPM(prop_ho_ieta, prop_ho_iphi)){ 
-	    fillDeltaEtaPhiHistograms(prop_ho_eta,
-				      prop_ho_phi,
-				      ho_recoEta,ho_recoPhi,
-				      "proptruth-HORecowSiPM");
-	    
-	    //Look at HO_Reco events associated and unassociated with a propagated truth muon
-	  
-	    //Associated
-	    if(std::abs(ho_recoEta - prop_ho_eta) < 0.087/2
-	       && std::abs(ho_recoPhi - prop_ho_phi) < 0.087/2){
-	      fillEnergyHistograms(bho_reco->energy(),
-				 "HO_RecowSiPM_AssociatedTruth");
-	      fillDeltaEtaPhiHistograms(prop_ho_eta,prop_ho_phi,
-					ho_recoEta,ho_recoPhi,
-					"proptruth-HORecowSiPM_AssociatedTruth");
-	      fillMapHistograms(ho_recoEta, ho_recoPhi, 
-				ho_recoieta, ho_recoiphi, ho_recox, ho_recoy,
-				"HORecoWithSiPM_AssociatedTruth");
-	    }
-	    //Unassocaiated
-	    else{
-	      /*
-	      std::cout <<"For my unassociated events I have," << std::endl
-			<< "prop_eta = " << prop_ho_eta << " prop_phi = " << prop_ho_phi << std::endl
-			<< "ho_eta = " << ho_recoEta << "and ho_phi = "  << ho_recoPhi << std::endl 
-			<< "With an eta difference of: " << prop_ho_eta - ho_recoEta << std::endl
-			<< "and a phi difference of: " << prop_ho_phi - ho_recoPhi << std::endl;
-	      //<< "and the check that Prop is a SiPM:" << IsaSiPM(prop_ho_eta, prop_ho_phi)
-	      */
-	      fillEnergyHistograms(bho_reco->energy(),
-				   "HO_RecowSiPM_NoAssociatedTruth");
-	      fillDeltaEtaPhiHistograms(prop_ho_eta, prop_ho_phi,
-					ho_recoEta, ho_recoPhi,
-				      "proptruth-HORecowSiPM_NoAssociatedTruth");
-	      
-	      fillMapHistograms(ho_recoEta, ho_recoPhi, 
-				ho_recoieta, ho_recoiphi, ho_recox, ho_recoy,
-				"HORecoWithSiPM_NoAssociatedTruth");
-	    }
-	  
-	    //Make a second selection cut on the energy > 0.4
-	    if(bho_reco->energy() > 0.4){
-	      
-	      /*
-	      fillDeltaEtaPhiHistograms(btruth->eta(),btruth->phi(),
-	      ho_recoEta,ho_recoPhi,
-	      "truth-Ho_RecowSiPM_EnergySelection");
-	      fillEnergyHistograms(bho_reco->energy(),"Ho_RecowSiPM_EnergySelection");
-	      filldPhiPtHistograms(btruth->phi(),btruth->pt(), 
-				 ho_recoPhi,
-				 "truth-HORecowSiPM_EnergySelection");
-	      */
-	      //Compare to Propogated Truth Particles
-	      fillDeltaEtaPhiHistograms(prop_ho_eta,
-					prop_ho_phi,
-					ho_recoEta,ho_recoPhi,
-					"proptruth-HORecowSiPM_EnergySelection");
-	      /*
-	       * After the two main selection cuts, 
-	       * see which ones are associated with real muons.
-	       * Condition that they are in the same tile, muon was propogated to.
-	       */
-	      // Check if propogated muon and generated muon are in the same tile
-	      
-	      /*
-	      if(std::abs(ho_recoEta - prop_ho_eta) < 0.087/2
-	      && std::abs(ho_recoPhi - prop_ho_phi) < 0.087/2){
-	      fillEnergyHistograms(bho_reco->energy(),
-	      "Ho_RecowSiPM_EnergySelection_AssociatedTruth");
-	      fillDeltaEtaPhiHistograms(prop_ho_eta,
-					  prop_ho_phi,
-					  ho_recoEta,ho_recoPhi,
-					  "proptruth-HORecowSiPM_EnergySelection_AssociatedTruth");
-					  }
-					  else{
-					  fillEnergyHistograms(bho_reco->energy(),
-					  "Ho_RecowSiPM_EnergySelection_NoAssociatedTruth");
-	      fillDeltaEtaPhiHistograms(prop_ho_eta,
-	      prop_ho_phi,
-	      ho_recoEta,ho_recoPhi,
-	      "proptruth-HORecowSiPM_EnergySelection_NoAssociatedTruth");
-	      }
-	      
-	      */
-	      
-	      /*
-	       * After the two main selection cuts.
-	       */
-	      
-	      /*
-	       * To account for the edge effects of muons propagated to one tile,
-	       * but depositing their energy in a neighboring tile, make a loose
-	       * cut on associated events.
-	       */
-	      
-	      //Width in eta and phi of Loosely Associated Events
-	      double LooseAssoc_BoxWidth = 1.5*0.087;  //Includes all neighboring tiles.
-	      if(std::abs(ho_recoEta - prop_ho_eta) < LooseAssoc_BoxWidth/2 
-		 && std::abs(ho_recoPhi - prop_ho_phi) < LooseAssoc_BoxWidth/2){ 
-		fillEnergyHistograms(bho_reco->energy(),
-				     "Ho_RecowSiPM_EnergySelection_LooseAssocProp");
-		fillDeltaEtaPhiHistograms(prop_ho_eta,
-					  prop_ho_phi,
-					  ho_recoEta,ho_recoPhi,
-					  "PropwSiPM-HORecowSiPM_EnergySelect_LooseAssoc");
-	      } else {
-		
-		fillEnergyHistograms(bho_reco->energy(),
-				     "Ho_RecowSiPM_EnergySelection_LooseNoAssocProp");
-		fillDeltaEtaPhiHistograms(prop_ho_eta,
-					  prop_ho_phi,
-					  ho_recoEta,ho_recoPhi,
-					  "PropwSiPM-HORecowSiPM_EnergySelect_LooseNoAssoc");
-	      }
-	    }
-	  }
-	}
-      }
-    }
+  for( ; bho_reco != eho_reco; ++bho_reco ) {
+    
+    //double ho_recoPhi = caloGeo->getPosition(bho_reco->id()).phi();
+    //double ho_recoEta = caloGeo->getPosition(bho_reco->id()).eta();
+    //double ho_recox = caloGeo->getPosition(bho_reco->id()).x();
+    //double ho_recoy = caloGeo->getPosition(bho_reco->id()).y();
+    int ho_recoieta = bho_reco->id().ieta();
+    int ho_recoiphi = bho_reco->id().iphi();
+    
+    //cout << ho_recoEta <<":" <<bho_reco->energy() <<" ";
+    
+    
+    vec_trigger_etas->push_back(caloGeo->getPosition(bho_reco->id()).eta());
+    vec_trigger_phis->push_back(caloGeo->getPosition(bho_reco->id()).phi());
+    vec_trigger_energies->push_back(bho_reco->energy());
+    vec_trigger_IsaSiPMs->push_back(IsaSiPM(ho_recoieta, ho_recoiphi));
+    
+    //vec_triggers->push_back(Trigger);
+    
+    
+    
+  }
   
   /*
-     * Start with the RPC
+   * Start with the RPC
      */
-    
+
+    /*
+
     auto brpc = rpcTriggerPrimitives->cbegin();
     auto erpc = rpcTriggerPrimitives->cend();
     //std::cout << "Number of rpcTriggerPrimitives:"
@@ -616,8 +644,8 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
       TriggerPrimitiveStationMap stubs = brpc->getStubs();
       // Chris' function will return configuration of RPC trigger
       // primitives: how many and which stations
-      //int rpctype = getType(stubs);
-      fillStationDistributionHistograms(stubs, "RPC");
+      //int rspctype = getType(stubs);
+      //fillStationDistributionHistograms(stubs, "RPC");
       
       // Loop on RPC stations, for each of which you can get a TP
       unsigned station;
@@ -908,8 +936,9 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
 	} // end loop on HCAL TP
       } // end loop on DTTF
     } // end loop on RPC
-    } // end loop on truth or global
-
+    */
+    
+ // end loop on truth or global 
     //Count of Truth Muons going through HO sectors with SiPMs
     
   // Here we fill counters - notice that I have to avoid leaving
@@ -922,7 +951,8 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
   if (foundHcal)  _counters->Fill(HCAL);
   if (foundStdMu) _counters->Fill(STDMU);
 
-  }
+  ho_muon_tree->Fill();
+}
 
 
 // ------------ method called once each job just before starting event loop  ------------
@@ -1048,6 +1078,7 @@ getBestTriggerPrimitive(const TriggerPrimitiveList& list,
  *Method to fill in histograms of the eta and phi distributions of a type given by the key.
  */
 
+/*
 void L1TMuonCaloInspector::fillDeltaEtaPhiHistograms(float eta1, float phi1,
 						     float eta2, float phi2,
 						     std::string key) {
@@ -1085,7 +1116,9 @@ void L1TMuonCaloInspector::fillDeltaEtaPhiHistograms(float eta1, float phi1,
   
   return;
 }
+*/
 
+/*
 void L1TMuonCaloInspector::fillMapHistograms(float eta, float phi,
 					     int ieta, int iphi,
 					     float x, float y,
@@ -1120,8 +1153,9 @@ if(!_h2diEtaiPhi.count(key))
   
   return;
 }
+*/
 
-
+/*
 void L1TMuonCaloInspector::filldPhiPtHistograms(float phi1, float pt, 
 						     float phi2,std::string key) {
   
@@ -1136,7 +1170,9 @@ void L1TMuonCaloInspector::filldPhiPtHistograms(float phi1, float pt,
   
   return;
 }
+*/
 
+/*
 void L1TMuonCaloInspector::fillKinematicHistograms(float eta, float phi,
 						   float pt,
 						   std::string key) {
@@ -1170,10 +1206,10 @@ void L1TMuonCaloInspector::fillKinematicHistograms(float eta, float phi,
   
   return;
 }
-
+*/
 
 //Method to fill a Histogram with Energies
-
+/*
 void L1TMuonCaloInspector::fillEnergyHistograms(float energy, std::string key){
 
   if(!_h1Energy.count(key)){
@@ -1184,11 +1220,13 @@ void L1TMuonCaloInspector::fillEnergyHistograms(float energy, std::string key){
   }
   _h1Energy[key]->Fill(energy);
 }
+*/
 
 /*
  * When subtracting 2 phi's, checks to make sure it is not accidently
  * wrapping around the unit circle.  Returns delta phi
  */
+
 double L1TMuonCaloInspector::WrapCheck(double phi1, double phi2){
   double delta_phi = phi1 - phi2;
   if(delta_phi < -M_PI){
@@ -1277,6 +1315,7 @@ void L1TMuonCaloInspector::ConvertetaphitoHOietaiphi(double eta, double phi, int
   }
 }
 
+  /*
 void L1TMuonCaloInspector::fillStationDistributionHistograms(TriggerPrimitiveStationMap stubs, std::string key){
   if(!_h1StationDistribution.count(key)){
     _h1StationDistribution[key] = 
@@ -1284,27 +1323,16 @@ void L1TMuonCaloInspector::fillStationDistributionHistograms(TriggerPrimitiveSta
 			       Form("%s Station Distribution",key.c_str()),
 				   11,0.5,11.5);
   } 
+  
+  
+   //11 Histograms bins are defined as followed: 1 -> 12, 2 -> 23,3 -> 34
+   // 4 -> 13, 5 -> 14, 6 -> 24,7 -> 123,8 -> 234,9 -> 124,10 -> 134,11 -> 1234
 
-  /*
-   *11 Histograms bins are defined as followed:
-     * 1 -> 12
-     * 2 -> 23
-     * 3 -> 34
-     * 4 -> 13
-     * 5 -> 14
-     * 6 -> 24
-     * 7 -> 123
-     * 8 -> 234
-     * 9 -> 124
-     * 10 -> 134
-     * 11 -> 1234
-     */
-    
-    std::stringstream stationcombo;
-    unsigned station;
-    //If station records an event, add to station combo.
-    for( station = 1; station <= 4; ++station ) {
-      const unsigned idx = 4*1+station-1; // RPCb=1
+   std::stringstream stationcombo;
+   unsigned station;
+  //If station records an event, add to station combo.
+   for( station = 1; station <= 4; ++station ) {
+   const unsigned idx = 4*1+station-1; // RPCb=1
       if(stubs.count(idx)){
 	stationcombo << station;
       }
@@ -1323,7 +1351,7 @@ void L1TMuonCaloInspector::fillStationDistributionHistograms(TriggerPrimitiveSta
 
     return;
 }
-
+*/
 
 //define this as a plug-in
 DEFINE_FWK_MODULE(L1TMuonCaloInspector);
