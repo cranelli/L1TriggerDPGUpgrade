@@ -76,6 +76,7 @@ public :
    double IndexToValue(int i, char cut_type);
    void PrintTables();
    void GraphRockCurve(int i_rcut);
+   void NormalizeFakeCount();
    void PlotCreator2D(TH2F* hist, const char* title, const char* xAxis, const char* yAxis, 
 		      double xMin, double xMax,double yMin, double yMax,int num_xbinmerge, 
 		      int num_ybinmerge, const char * type);
@@ -83,6 +84,7 @@ public :
    //Histograms
    TH2F * hist_efficiency_RT;
    TH2F *  hist_purity_RT;
+   TH2F * hist_normfakerate_RT;
 
    //Graphs
    TGraph * graph_rock;
@@ -113,6 +115,8 @@ void HOMuon_TreeLoop_Efficiency::Init(TTree *tree)
    Propagator_Phis = 0;
    Propagator_IsaSiPMs = 0;
    Trigger_Etas = 0;
+
+
    Trigger_Phis = 0;
    Trigger_Energies = 0;
    Trigger_IsaSiPMs = 0;

@@ -41,11 +41,14 @@
 
 #define num_rcuts 10
 #define num_tcuts 10
+//SiPM Area (in eta phi space)
+#define A_SiPM 0.9991 
 
 //Global Variables
 int efficiency_count[num_rcuts][num_tcuts];
 int accepted_count[num_rcuts][num_tcuts];
 int fake_count[num_rcuts][num_tcuts]; 
+double norm_fake_count[num_rcuts][num_tcuts];
 int propSiPM_count;
 
 //using namespace::std;
@@ -60,7 +63,7 @@ void HOMuon_TreeLoop_Efficiency::Begin(TTree * /*tree*/)
 
    hist_efficiency_RT = new TH2F("Efficiency_RT", "2D Efficiency Plot", num_rcuts, 0.00001, 0.30001, num_tcuts, 0.0001, 0.10);
    hist_purity_RT = new TH2F("Purity_RT", "2D Purity", num_rcuts, 0.00001, 0.30001, num_tcuts, 0.0001, 0.10);
-
+   hist_normfakerate_RT = new TH2F("NormFakeRate_RT", " NormFakeRate", num_rcuts, 0.00001, 0.30001, num_tcuts, 0.0001, 0.10);
    int propSiPM_count =0;
    for(int i_rcut=0; i_rcut <num_rcuts; i_rcut++){
      for(int i_tcut=0; i_tcut <num_tcuts; i_tcut++){
@@ -137,6 +140,7 @@ Bool_t HOMuon_TreeLoop_Efficiency::Process(Long64_t entry)
     }
   }
 
+
   return kTRUE;
 }
 
@@ -154,20 +158,28 @@ void HOMuon_TreeLoop_Efficiency::Terminate()
    // a query. It always runs on the client, it can be used to present
    // the results graphically or save the results to file.
  
-  cout << "Number of particles propagated through SiPM sectors: " <<propSiPM_count <<endl;
-  PrintTables();
 
+  cout << "Number of particles propagated through SiPM sectors: " <<propSiPM_count <<endl;
+
+  
+  //Normalize Fake Count
+  NormalizeFakeCount();
+
+  //Print Tables
+  PrintTables();
 
   //Fill Histograms from global arrays.
 
   int i_rcut, i_tcut;
-  
+
+
   //Loop over Cuts
   for(i_rcut=0; i_rcut <num_rcuts; i_rcut++){
     for(i_tcut=0; i_tcut<num_tcuts; i_tcut++){
       hist_efficiency_RT->Fill(IndexToValue(i_rcut, 'R'),IndexToValue(i_tcut, 'T'), double(efficiency_count[i_rcut][i_tcut])/propSiPM_count);
       // hist_efficiency_RT->Fill(IndexToValue(i_rcut, 'R'),IndexToValue(i_tcut, 'T'), double(efficiency_count[i_rcut][i_tcut]));
-      hist_purity_RT->Fill(IndexToValue(i_rcut, 'R'),IndexToValue(i_tcut, 'T'), 1-double(fake_count[i_rcut][i_tcut])/accepted_count[i_rcut][i_tcut]); 
+      hist_purity_RT->Fill(IndexToValue(i_rcut, 'R'),IndexToValue(i_tcut, 'T'), 1-double(fake_count[i_rcut][i_tcut])/accepted_count[i_rcut][i_tcut]);
+      hist_normfakerate_RT->Fill(IndexToValue(i_rcut,'R'),IndexToValue(i_tcut, 'T'), norm_fake_count[i_rcut][i_tcut]);
     }
   }
     
@@ -177,16 +189,13 @@ void HOMuon_TreeLoop_Efficiency::Terminate()
   
   PlotCreator2D(hist_efficiency_RT,"2D Efficiency Plot","R Cut", "T Cut", 0.03, 0.30, 0.01, 0.10,1,1,"colz");
   PlotCreator2D(hist_purity_RT,"2D Purity Plot","R Cut", "T Cut", 0.03, 0.3, 0.01, 0.10,1,1,"colz");
+  PlotCreator2D(hist_normfakerate_RT, "2D Norm Fake Rate", "R Cut", "T Cut", 0.03, 0.3, 0.01, 0.10,1,1,"colz");
   
   //Make Rock Curve
   i_rcut=1;
   GraphRockCurve(i_rcut);
 
 }
-
-
-
-
 
 
 /*
@@ -250,6 +259,22 @@ bool HOMuon_TreeLoop_Efficiency::IsFake(int i_trig, int i_rcut){
   }
   return true;
 }
+
+/*
+ * Normalizes fake count, to take into consideration the fake triggers,
+ * that are within our cone of interest.
+ */
+
+ void HOMuon_TreeLoop_Efficiency::NormalizeFakeCount(){
+   double a_r, norm_factor;
+   for(int i_rcut=0; i_rcut <num_rcuts; i_rcut++){
+     a_r= pow(IndexToValue(i_rcut,'R'),2); // Area of Cone 
+     norm_factor= A_SiPM/(A_SiPM-a_r); // A/(A-a_r), where A is SiPM area 0.9991, and a_r is the cone area.
+     for(int i_tcut=0; i_tcut<num_tcuts; i_tcut++){
+	norm_fake_count[i_rcut][i_tcut] = fake_count[i_rcut][i_tcut]*norm_factor;
+     }
+   }
+ }
 
 /*
  *For loops are used inside the tree looper, to test all the cuts.
@@ -320,15 +345,28 @@ void HOMuon_TreeLoop_Efficiency::PrintTables(){
   }
   cout << endl <<endl;
 
-  cout<<"Fakes" << endl;
+  */
   
+  cout<<"Fakes" << endl;
+
   for(i_rcut=0; i_rcut <num_rcuts; i_rcut++){
     for(i_tcut=0; i_tcut<num_tcuts;i_tcut++){
       printf("%3i  ", fake_count[i_rcut][i_tcut]);
     }
     cout << endl;
   }
-  */
+  cout <<endl;
+
+  cout <<"Normalized Fakes" << endl;
+
+  for(i_rcut=0; i_rcut <num_rcuts; i_rcut++){
+    for(i_tcut=0; i_tcut<num_tcuts;i_tcut++){ 
+      printf("%10.2f  ", norm_fake_count[i_rcut][i_tcut]);
+    }
+    cout << endl;
+  }
+  cout << endl;
+  
 }
 
 /*
