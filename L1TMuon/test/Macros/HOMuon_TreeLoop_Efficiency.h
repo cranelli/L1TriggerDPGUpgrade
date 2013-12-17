@@ -1,26 +1,28 @@
 //////////////////////////////////////////////////////////
 // This class has been automatically generated on
-// Wed Nov 27 16:21:26 2013 by ROOT version 5.34/05
+// Wed Dec 11 13:59:39 2013 by ROOT version 5.34/05
 // from TTree ho_muon_tree/Generator, Propagator, and Trigger Data
-// found on file: ../L1ITMuonSingleMu_14Pt_caloInspector_New.root
+// found on file: ../RootFiles/L1ITMuonSingleMu_14Pt_caloInspector_New.root
 //////////////////////////////////////////////////////////
 
-#ifndef HOMuon_TreeLoop_Plotter_h
-#define HOMuon_TreeLoop_Plotter_h
+#ifndef HOMuon_TreeLoop_Efficiency_h
+#define HOMuon_TreeLoop_Efficiency_h
 
 #include <TROOT.h>
 #include <TChain.h>
 #include <TFile.h>
 #include <TSelector.h>
+#include <string>
 #include <TH1F.h>
 #include <TH2F.h>
+#include <TGraph.h>
 
 // Header file for the classes stored in the TTree if any.
 #include <vector>
 
 // Fixed size dimensions of array or collections stored in the TTree if any.
 
-class HOMuon_TreeLoop_Plotter : public TSelector {
+class HOMuon_TreeLoop_Efficiency : public TSelector {
 public :
    TTree          *fChain;   //!pointer to the analyzed TTree or TChain
 
@@ -50,8 +52,8 @@ public :
    TBranch        *b_Trigger_Energies;   //!
    TBranch        *b_Trigger_IsaSiPMs;   //!
 
-   HOMuon_TreeLoop_Plotter(TTree * /*tree*/ =0) : fChain(0) { }
-   virtual ~HOMuon_TreeLoop_Plotter() { }
+   HOMuon_TreeLoop_Efficiency(TTree * /*tree*/ =0) : fChain(0) { }
+   virtual ~HOMuon_TreeLoop_Efficiency() { }
    virtual Int_t   Version() const { return 2; }
    virtual void    Begin(TTree *tree);
    virtual void    SlaveBegin(TTree *tree);
@@ -66,54 +68,33 @@ public :
    virtual void    SlaveTerminate();
    virtual void    Terminate();
 
-        
-     // My stuff
-     
-     TH1F * hist_SiPM_energy;
-     void SiPM_energy_Fill();
-     TH2F * hist_PropSiPM_Map;
-     void PropSiPM_Map_Fill(unsigned int i);
-     TH2F * hist_TriggerSiPM_Map;
-     TH2F * hist_TriggerSiPMT_Map;
-     TH2F * hist_PropTriggerSiPMT_Map;
-     TH2F * hist_GeneratorTriggerSiPMT_Map;
-     void TriggerSiPM_Map_Fill();
-     TH1F * hist_PropSiPMT_energy;
-     void PropSiPMT_energy_Fill(unsigned int i);
-     TH1F * hist_SiPMPropTriggerT_deltaEta;
-     TH1F * hist_SiPMPropTriggerT_deltaPhi;
-     TH2F * hist_SiPMPropTriggerT_deltaEtaPhi;
-     TH2F * hist_PropSiPMTriggerT_deltaEtaPhi;
-     void PropTrigger_deltaEtadeltaPhi_Fill(unsigned int i);
-     TH1F * hist_TightFit_energy;
-     TH1F * hist_NotTightFit_energy;
-     TH1F * hist_TightFitT_energy;
-     TH1F * hist_NotTightFitT_energy;
-     TH2F * hist_NotTightFit_deltaEtaPhi;
-     TH2F * hist_NotTightFitT_deltaEtaPhi;
-     void TightFitandNot_Fill(unsigned int i, double TightCutWidth);
-     TH1F * hist_LooseFit_energy;
-     TH1F * hist_NotLooseFit_energy;
-     TH1F * hist_LooseFitT_energy;
-     TH1F * hist_NotLooseFitT_energy;
-     TH2F * hist_NotLooseFit_deltaEtaPhi;
-     TH2F * hist_NotLooseFitT_deltaEtaPhi;
-     void LooseFitandNot_Fill(unsigned int i, double LooseCutWidth);
-     // void NotTightFit_Fill();
-     
-     
-     void PlotCreator(TH1F * hist,const char * title, const char * xAxis, const char * yAxis,double xMin, double xMax, int num_binmerge=1, bool isLogy=false);
-     void PlotCreator2D(TH2F* hist, const char* title, const char* xAxis, const char* yAxis, double xMin, double xMax,double yMin, double yMax,int num_xbinmerge=1, int num_ybinmerge=1, const char * type="box");
-     double WrapCheck(double phi1, double phi2);
-     
-     
-   ClassDef(HOMuon_TreeLoop_Plotter,0);
+   //My Stuff
+   double WrapCheck(double phi1, double phi2);
+   bool TriggerMatch(int i_part, int i_rcut, int i_tcut);
+   bool IsAccepted(int i_trig, int i_tcut);
+   bool IsFake(int i_trig, int i_rcut);
+   double IndexToValue(int i, char cut_type);
+   void PrintTables();
+   void GraphRockCurve(int i_rcut);
+   void PlotCreator2D(TH2F* hist, const char* title, const char* xAxis, const char* yAxis, 
+		      double xMin, double xMax,double yMin, double yMax,int num_xbinmerge, 
+		      int num_ybinmerge, const char * type);
+
+   //Histograms
+   TH2F * hist_efficiency_RT;
+   TH2F *  hist_purity_RT;
+
+   //Graphs
+   TGraph * graph_rock;
+
+   
+   ClassDef(HOMuon_TreeLoop_Efficiency,0);
 };
 
 #endif
 
-#ifdef HOMuon_TreeLoop_Plotter_cxx
-void HOMuon_TreeLoop_Plotter::Init(TTree *tree)
+#ifdef HOMuon_TreeLoop_Efficiency_cxx
+void HOMuon_TreeLoop_Efficiency::Init(TTree *tree)
 {
    // The Init() function is called when the selector needs to initialize
    // a new tree or chain. Typically here the branch addresses and branch
@@ -153,7 +134,7 @@ void HOMuon_TreeLoop_Plotter::Init(TTree *tree)
    fChain->SetBranchAddress("Trigger_IsaSiPMs", &Trigger_IsaSiPMs, &b_Trigger_IsaSiPMs);
 }
 
-Bool_t HOMuon_TreeLoop_Plotter::Notify()
+Bool_t HOMuon_TreeLoop_Efficiency::Notify()
 {
    // The Notify() function is called when a new file is opened. This
    // can be either for a new TTree in a TChain or when when a new TTree
@@ -164,4 +145,4 @@ Bool_t HOMuon_TreeLoop_Plotter::Notify()
    return kTRUE;
 }
 
-#endif // #ifdef HOMuon_TreeLoop_Plotter_cxx
+#endif // #ifdef HOMuon_TreeLoop_Efficiency_cxx
