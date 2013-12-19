@@ -92,9 +92,18 @@ process.generator = cms.EDProducer("FlatRandomPtGunProducer",
     ),
     Verbosity = cms.untracked.int32(0),
     psethack = cms.string('single mu pt 5to100'),
-    AddAntiParticle = cms.bool(False), #need *single* muons dammit #no cursing cocksucker
+    AddAntiParticle = cms.bool(False), 
     firstRun = cms.untracked.uint32(1)
 )
+
+# add SiPMs to HO
+process.mix.digitizers.hcal.ho.pixels = cms.int32(2500)
+process.mix.digitizers.hcal.ho.siPMCode = 1
+process.mix.digitizers.hcal.ho.photoelectronsToAnalog = cms.vdouble([4.0]*16)
+
+#turn off HO ZS
+process.hcalRawData.HO = cms.untracked.InputTag("simHcalUnsuppressedDigis", "", "")
+
 
 
 # Path and EndPath definitions
