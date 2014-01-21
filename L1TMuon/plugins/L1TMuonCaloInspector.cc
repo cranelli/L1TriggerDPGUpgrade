@@ -66,6 +66,7 @@
 #include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
 #include "Geometry/CommonDetUnit/interface/GlobalTrackingGeometry.h"
 #include "Geometry/Records/interface/GlobalTrackingGeometryRecord.h"
+//#include "DataFormats/GeometrySurface/interface/Plane.h"
 #include "DataFormats/GeometrySurface/interface/Cylinder.h"
 #include "TrackingTools/TrajectoryState/interface/TrajectoryStateOnSurface.h"
 
@@ -110,6 +111,7 @@ private:
   // Surfaces to be used for extrapolation
   Cylinder::CylinderPointer _rpcCyl[4]; // 4 = number of stations
   Cylinder::CylinderPointer _hoCyl;
+  //Plane::PlanePointer _hoPlane;
 
   bool _doGen;
   edm::InputTag _genInput;
@@ -304,12 +306,17 @@ L1TMuonCaloInspector::L1TMuonCaloInspector(const edm::ParameterSet& iConfig){
   Cylinder::RotationType rot0; // needed in Cylinder constructor
   
   //changing to cm
-  _rpcCyl[0] = Cylinder::build(400,pos0,rot0);
+  
+  //These r values are unconfirmed.
+  /*
+ _rpcCyl[0] = Cylinder::build(400,pos0,rot0);
   _rpcCyl[1] = Cylinder::build(500,pos0,rot0);
   _rpcCyl[2] = Cylinder::build(600,pos0,rot0);
   _rpcCyl[3] = Cylinder::build(700,pos0,rot0);
+  */
 
-  _hoCyl = Cylinder::build(360,pos0,rot0);
+  _hoCyl = Cylinder::build(412.6,pos0,rot0);
+
   /*
   _rpcCyl[0] = Cylinder::build(4000,pos0,rot0);
   _rpcCyl[1] = Cylinder::build(5000,pos0,rot0);
@@ -559,7 +566,7 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
     
     TrajectoryStateOnSurface prop_ho = 
       shProp->propagate(initial,*_hoCyl);
-    TrajectoryStateOnSurface prop_rpc[4];
+    //TrajectoryStateOnSurface prop_rpc[4];
 
     double prop_ho_eta, prop_ho_phi;
     prop_ho_eta = prop_ho.globalPosition().eta();
@@ -581,10 +588,12 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
     vec_propagator_etas->push_back(prop_ho.globalPosition().eta());
     vec_propagator_phis->push_back(prop_ho.globalPosition().phi());
     vec_propagator_IsaSiPMs->push_back(IsaSiPM(prop_ho_ieta, prop_ho_iphi));
-
+    
+    /*
     for(int i = 0; i<4; i++){
       prop_rpc[i] = shProp->propagate(initial,*_rpcCyl[i]);
     }
+    */
 
     //See how many truth muons go through SiPM sectors after propogation.
     //First need to convert to ieta and iphi.  

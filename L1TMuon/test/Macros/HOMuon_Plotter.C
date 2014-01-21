@@ -8,7 +8,7 @@
 #include "HOMuon_TreeLoop_Plotter.h"
 
 void HOMuon_Plotter(const char *file = 
-		    "../RootFiles/L1ITMuonSingleMu_14Pt_caloInspector_New.root",
+		    "../RootFiles/L1ITMuonSingleMu_14Pt_R412_caloInspector_New.root",
 		    const char* tree_loc = "L1TMuonCaloInsp/ho_muon_tree") {
   TFile* inFile = TFile::Open(file);
   //std::cout << inFile << std::endl;

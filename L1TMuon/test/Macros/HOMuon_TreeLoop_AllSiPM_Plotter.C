@@ -1,5 +1,5 @@
-#define HOMuon_TreeLoop_Plotter_cxx
-// The class definition in HOMuon_TreeLoop_PlotterNew.h has been generated automatically
+#define HOMuon_TreeLoop_AllSiPM_Plotter_cxx
+// The class definition in HOMuon_TreeLoop_AllSiPM_PlotterNew.h has been generated automatically
 // by the ROOT utility TTree::MakeSelector(). This class is derived
 // from the ROOT class TSelector. For more information on the TSelector
 // framework see $ROOTSYS/README/README.SELECTOR or the ROOT User Manual.
@@ -18,11 +18,11 @@
 //
 // To use this file, try the following session on your Tree T:
 //
-// Root > T->Process("HOMuon_TreeLoop_Plotter.C")
-// Root > T->Process("HOMuon_TreeLoop_Plotter.C","some options")
-// Root > T->Process("HOMuon_TreeLoop_Plotter.C+") //
+// Root > T->Process("HOMuon_TreeLoop_AllSiPM_Plotter.C")
+// Root > T->Process("HOMuon_TreeLoop_AllSiPM_Plotter.C","some options")
+// Root > T->Process("HOMuon_TreeLoop_AllSiPM_Plotter.C+") //
 
-#include "HOMuon_TreeLoop_Plotter.h"
+#include "HOMuon_TreeLoop_AllSiPM_Plotter.h"
 #include<TH1F.h>
 #include <TH2.h>
 #include<TCanvas.h>
@@ -35,15 +35,19 @@
 
 
 
-void HOMuon_TreeLoop_Plotter::Begin(TTree * /*tree*/)
+void HOMuon_TreeLoop_AllSiPM_Plotter::Begin(TTree * /*tree*/)
 {
    // The Begin() function is called at the start of the query.
    // When running with PROOF Begin() is only called on the client.
    // The tree argument is deprecated (on PROOF 0 is passed). 
    TString option = GetOption();
-
+   
+   /*
+   
    hist_SiPM_energy = new TH1F("SiPM_energy_hist", "SiPM energy hist", 500,-1.0,9.9);
+   hist_HPD_energy = new TH1F("HPE_energy_hist", "HPE energy hist", 500,-1.0,9.9);
    hist_PropSiPMT_energy = new TH1F("PropSiPMT_energy_hist", "PropSiPMT energy hist", 100,-0.1,9.9);
+   hist_wheelzero_energy = new TH1F("WheelZero_Energy","Wheel 0 energy hist", 100,-0.1,9.9);
    hist_PropSiPM_Map = new TH2F("PropSiPM_Map", "PropSiPM Map", 100, -1.5, 1.5, 100, -3.15, 3.15);
    hist_TriggerSiPM_Map = new TH2F("TriggerSiPM_Map", "TriggerSiPM Map", 60, -1.31, 1.31, 144, -3.15, 3.15);
    hist_TriggerSiPMT_Map = new TH2F("TriggerSiPMT_Map", "TriggerSiPM above Threshold Map", 60, -1.31, 1.31, 144, -3.15, 3.15);
@@ -66,12 +70,13 @@ void HOMuon_TreeLoop_Plotter::Begin(TTree * /*tree*/)
    hist_NotLooseFitT_energy = new TH1F("NotLooseT_energy_hist", "Not Loose with Threshold energy Distibrution", 500,-0.1,9.9);
    hist_NotLooseFit_deltaEtaPhi = new TH2F("DeltaEtaPhi_NotLooseFit", "Delta Phi v Delta Eta Propagator -Trigger", 400, -2.6, 2.6, 100, -3.14, 3.14);
    hist_NotLooseFitT_deltaEtaPhi = new TH2F("DeltaEtaPhi_NotLooseFit", "Delta Phi v Delta Eta Propagator -Trigger", 400, -3.0, 3.0, 400, -3.14, 3.14);
-
+   
    //hist_map = new TH2F("map","map",100,-1.2,1.2,100,-3.15,3.15);
-
+   
+   */
 }
 
-void HOMuon_TreeLoop_Plotter::SlaveBegin(TTree * /*tree*/)
+void HOMuon_TreeLoop_AllSiPM_Plotter::SlaveBegin(TTree * /*tree*/)
 {
    // The SlaveBegin() function is called after the Begin() function.
    // When running with PROOF SlaveBegin() is called on each slave server.
@@ -81,12 +86,12 @@ void HOMuon_TreeLoop_Plotter::SlaveBegin(TTree * /*tree*/)
 
 }
 
-Bool_t HOMuon_TreeLoop_Plotter::Process(Long64_t entry)
+Bool_t HOMuon_TreeLoop_AllSiPM_Plotter::Process(Long64_t entry)
 {
    // The Process() function is called for each entry in the tree (or possibly
    // keyed object in the case of PROOF) to be processed. The entry argument
    // specifies which entry in the currently loaded tree is to be processed.
-   // It can be passed to either HOMuon_TreeLoop_Plotter::GetEntry() or TBranch::GetEntry()
+   // It can be passed to either HOMuon_TreeLoop_AllSiPM_Plotter::GetEntry() or TBranch::GetEntry()
    // to read either all or the required parts of the data. When processing
    // keyed objects with PROOF, the object is already loaded and is available
    // via the fObject pointer.
@@ -104,7 +109,7 @@ Bool_t HOMuon_TreeLoop_Plotter::Process(Long64_t entry)
   
   fChain->GetEntry(entry);
 
-
+  
   /*
    * Have given the constraints for each histogram in it's own function,
    * so they can easily be commented out.
@@ -113,8 +118,11 @@ Bool_t HOMuon_TreeLoop_Plotter::Process(Long64_t entry)
   //Histogram of Energy for Triggers from SiPM Sector, Signal and Noise.
   SiPM_energy_Fill();
 
+  //Histogram of Energy for Triggers from Wheel 0
+  //WheelZero_energy_Fill();
+
   //Map of all Trigger located in a SiPM Sector
-  TriggerSiPM_Map_Fill();
+  //TriggerSiPM_Map_Fill();
   
 
   /*
@@ -122,31 +130,32 @@ Bool_t HOMuon_TreeLoop_Plotter::Process(Long64_t entry)
    *currently just loop over them.
    */
 
-  //Loop Over Propagator entries
+  //Loop Over Propagator entries (To deal with events with multiple propageted particles)
   for(unsigned int i =0; i< Propagator_IsaSiPMs->size(); i++){
   
     //Map of all Particles Propagated to a SiPM Sector,
-    PropSiPM_Map_Fill(i);
+    //PropSiPM_Map_Fill(i);
 
     //Histogram of Energies for SiPM Triggers for Props.
-    PropSiPMT_energy_Fill(i);
+    //PropSiPMT_energy_Fill(i);
 
     //deltaEta deltaPhi Plots for SiPM Triggers for Props. 
-    PropTrigger_deltaEtadeltaPhi_Fill(i);
-    
-    double tilewidth = 0.087;
-    double TightCutHalfWidth = 0.05/2;
-    TightFitandNot_Fill(i, TightCutHalfWidth);
+    //PropTrigger_deltaEtadeltaPhi_Fill(i);
 
-    double LooseCutWidth = tilewidth*3;
+    //double TightCutHalfWidth = 0.05/2;
+    //TightFitandNot_Fill(i, TightCutHalfWidth);
+
+    double LooseCutWidth = 0.087*3;
     LooseFitandNot_Fill(i, LooseCutWidth);
+    
+
     //TightFit_Fill();
     //NotTightFit_Fill();
   }
    return kTRUE;
 }
 
-void HOMuon_TreeLoop_Plotter::SlaveTerminate()
+void HOMuon_TreeLoop_AllSiPM_Plotter::SlaveTerminate()
 {
    // The SlaveTerminate() function is called after all entries or objects
    // have been processed. When running with PROOF SlaveTerminate() is called
@@ -154,7 +163,7 @@ void HOMuon_TreeLoop_Plotter::SlaveTerminate()
 
 }
 
-void HOMuon_TreeLoop_Plotter::Terminate()
+void HOMuon_TreeLoop_AllSiPM_Plotter::Terminate()
 {
    // The Terminate() function is the last function to be called during
    // a query. It always runs on the client, it can be used to present
@@ -165,7 +174,15 @@ void HOMuon_TreeLoop_Plotter::Terminate()
    * Create and Save Plots
    */
 
-  PlotCreator(hist_SiPM_energy, "SiPM_Energy","Energy GeV", "Counts",-0.2, 5.0, 3, true);
+  PlotCreator(_h1Energy["AllSiPM"], "All_SiPM_Energy","Energy GeV", "Counts",-0.2, 5.0, 3, true);
+
+  PlotCreator2D(_h2DeltaEtaDeltaPhi["NotLooseFitT"], "Not Loose Fit", "#Delta #eta", "#Delta #Phi", -1.0, 1.0, -1.0, 1.0, 1,1,"CONT0");
+
+  PlotCreator(_h1Energy["NotLooseFitT"], "Not_Loose_Fit_Energy", "Energy GeV", "Counts", -0.2, 5.0, 3, false);
+
+  // PlotCreator(hist_HPD_energy, "HPD_Energy","Energy GeV", "Counts",-0.2, 9.0, 3, true);
+
+  //PlotCreator(hist_wheelzero_energy, "Wheel0_Energy","Energy GeV", "Counts",-0.2, 9.0, 3, true);
 
   // PlotCreator2D(hist_PropSiPM_Map,"PropSiPM_Map","#eta", "#phi", -1.3, 1.3, -3.15, 3.15,2,2,"box");
 
@@ -187,7 +204,7 @@ void HOMuon_TreeLoop_Plotter::Terminate()
 
   //PlotCreator2D(hist_PropSiPMTriggerT_deltaEtaPhi,"DeltaEtaPhi_PropSiPMTriggerT","#eta", "#phi", -3.0, 3.0, -3.14, 3.14,1,1,"CONT0");
 
-  PlotCreator(hist_TightFit_energy, "Energy Distribution for Tight Fit", "Energy GeV", "Counts", -0.2, 5.0, 3, false);
+  // PlotCreator(hist_TightFit_energy, "Energy Distribution for Tight Fit", "Energy GeV", "Counts", -0.2, 5.0, 3, false);
 
   // PlotCreator(hist_NotLooseFit_energy, "Energy Distribution for Not Loose Fit", "Energy GeV", "Counts", -0.2, 2.0, 1, true);
 
@@ -196,10 +213,6 @@ void HOMuon_TreeLoop_Plotter::Terminate()
   //PlotCreator(hist_TightFitT_energy, "Energy Distribution for Tight Fit with Threshold", "Energy GeV", "Counts", -0.2, 5.0, 2, true);
 
   //PlotCreator(hist_NotTightFitT_energy, "Energy Distribution for Not Tight Fit with Threshold", "Energy GeV", "Counts", -0.2, 5.0, 2, true);
-
-  PlotCreator(hist_NotLooseFitT_energy,  "Energy Distribution for Not Loose Fit with Threshold", "Energy GeV", "Counts", -0.2, 5.0, 2,false);
-
-  PlotCreator2D(hist_NotLooseFitT_deltaEtaPhi,"DeltaEtaPhi_NotLooseFit","#Delta #eta", "#Delta #phi", -1.0, 1.0, -1.0, 1.0,1,1,"CONT0");
 
   //PlotCreator2D(hist_NotTightFit_deltaEtaPhi,"DeltaEtaPhi_NotTightFit","#eta", "#phi", -2.0, 1.0, -3.14, 3.14,1,1,"CONT0");
   
@@ -210,24 +223,69 @@ void HOMuon_TreeLoop_Plotter::Terminate()
   /*
    *Write Histograms to a root file.
    */
+  
+  /*
   TFile *outfile = TFile::Open("out_50Pt_Muon.root","RECREATE");
   hist_SiPM_energy->Write();
+  hist_HPD_energy->Write();
   hist_PropSiPM_Map->Write();
   hist_PropSiPMT_energy->Write();
   hist_SiPMPropTriggerT_deltaEta->Write();
   hist_SiPMPropTriggerT_deltaPhi->Write();
   hist_SiPMPropTriggerT_deltaEtaPhi->Write();
   outfile->Close();
-
+  */
 
 }
 
 
 
-void HOMuon_TreeLoop_Plotter::SiPM_energy_Fill(){
+void HOMuon_TreeLoop_AllSiPM_Plotter::SiPM_energy_Fill(){
+  string key = "AllSiPM";
+    for(unsigned int i=0; i < Trigger_Energies->size(); i++ ){
+      FillEnergyHistograms(Trigger_Energies->at(i), key);
+    }
+  /*
   for(unsigned int i =0; i < Trigger_Energies->size(); i++ ){
     if(Trigger_IsaSiPMs->at(i)){
       hist_SiPM_energy->Fill(Trigger_Energies->at(i));
+    } else {
+      hist_HPD_energy->Fill(Trigger_Energies->at(i));
+    }
+  }
+  */
+}
+
+void HOMuon_TreeLoop_AllSiPM_Plotter::LooseFitandNot_Fill(unsigned int prop_index, double LooseCutWidth){
+  //double cut_width = 0.087/2;
+  for(unsigned int i =0; i < Trigger_Energies->size(); i++ ){
+    //if(Trigger_IsaSiPMs->at(i)){ //SiPM Trigger
+    //Fill Energy Histogroms for Triggers Loosely Fit with Propagated Muon
+    if(abs(Propagator_Etas->at(prop_index)-Trigger_Etas->at(i)) <= LooseCutWidth/2 && abs(WrapCheck(Propagator_Phis->at(prop_index), Trigger_Phis->at(i))) <= LooseCutWidth/2){
+      //hist_LooseFit_energy->Fill(Trigger_Energies->at(i));
+      if(Trigger_Energies->at(i)>0.2){ //Above Threshold
+	//hist_LooseFitT_energy->Fill(Trigger_Energies->at(i));
+      }
+    }
+    else {
+      //hist_NotLooseFit_energy->Fill(Trigger_Energies->at(i));
+      //hist_NotLooseFit_deltaEtaPhi->Fill(Propagator_Etas->at(prop_index)-Trigger_Etas->at(i), WrapCheck(Propagator_Phis->at(prop_index),Trigger_Phis->at(i))); 
+      if(Trigger_Energies->at(i)>0.2){ //Set Threshold
+	std::string key = "NotLooseFitT";
+	FillEtaPhiHistograms(Propagator_Etas->at(prop_index),Trigger_Etas->at(i),
+			   Propagator_Phis->at(prop_index),Trigger_Phis->at(i),key);
+	FillEnergyHistograms(Trigger_Energies->at(i), key);
+	//hist_NotLooseFitT_energy->Fill(Trigger_Energies->at(i));
+	//hist_NotLooseFitT_deltaEtaPhi->Fill(Propagator_Etas->at(prop_index)-Trigger_Etas->at(i), WrapCheck(Propagator_Phis->at(prop_index),Trigger_Phis->at(i)));
+      }
+    }
+  }
+}
+
+void HOMuon_TreeLoop_AllSiPM_Plotter::WheelZero_energy_Fill(){
+  for(unsigned int i =0; i < Trigger_Energies->size(); i++ ){
+    if(Trigger_Etas->at(i)<0.087*4 && Trigger_Etas->at(i)> -0.087*4){
+      hist_wheelzero_energy->Fill(Trigger_Energies->at(i));
     }
   }
 }
@@ -236,7 +294,7 @@ void HOMuon_TreeLoop_Plotter::SiPM_energy_Fill(){
  *Creates a Map, with the Eta and Phi Positions of the Propagated Muons
  *through SiPM HO sectors.
  */
-void HOMuon_TreeLoop_Plotter::PropSiPM_Map_Fill(unsigned int prop_index){
+void HOMuon_TreeLoop_AllSiPM_Plotter::PropSiPM_Map_Fill(unsigned int prop_index){
   if(Propagator_IsaSiPMs->at(prop_index)){
     hist_PropSiPM_Map->Fill(Propagator_Etas->at(prop_index), Propagator_Phis->at(prop_index));
   }
@@ -246,7 +304,7 @@ void HOMuon_TreeLoop_Plotter::PropSiPM_Map_Fill(unsigned int prop_index){
  *Creates a Map, with the Eta and Phi Positions of the Triggers
  *located in SiPM HO sectors.
  */
-void HOMuon_TreeLoop_Plotter::TriggerSiPM_Map_Fill(){
+void HOMuon_TreeLoop_AllSiPM_Plotter::TriggerSiPM_Map_Fill(){
   for(unsigned int i =0; i< Trigger_IsaSiPMs->size(); i++){ //Loops over all Triggers from a sigle event.
     if(Trigger_IsaSiPMs->at(i)){ //If Trigger IsaSiPM
       hist_TriggerSiPM_Map->Fill(Trigger_Etas->at(i), Trigger_Phis->at(i));
@@ -264,7 +322,7 @@ void HOMuon_TreeLoop_Plotter::TriggerSiPM_Map_Fill(){
  * are propagated to pass through the SiPM Sector.
  */
 
-void HOMuon_TreeLoop_Plotter::PropSiPMT_energy_Fill(unsigned int prop_index){
+void HOMuon_TreeLoop_AllSiPM_Plotter::PropSiPMT_energy_Fill(unsigned int prop_index){
   if(Propagator_IsaSiPMs->at(prop_index)){
     for(unsigned int i =0; i < Trigger_Energies->size(); i++ ){
       if(Trigger_IsaSiPMs->at(i) && (Trigger_Energies->at(i) >= 0.2)){ //SiPM Trigger Above Threshold
@@ -280,7 +338,7 @@ void HOMuon_TreeLoop_Plotter::PropSiPMT_energy_Fill(unsigned int prop_index){
  * matched with a SiPM Trigger above Threshold.
  */
 
-void HOMuon_TreeLoop_Plotter::PropTrigger_deltaEtadeltaPhi_Fill(unsigned int prop_index){
+void HOMuon_TreeLoop_AllSiPM_Plotter::PropTrigger_deltaEtadeltaPhi_Fill(unsigned int prop_index){
   for(unsigned int i =0; i < Trigger_Energies->size(); i++ ){
     if(Trigger_IsaSiPMs->at(i) && (Trigger_Energies->at(i) >= 0.2)){ //SiPM Trigger Above Threshold
       hist_PropSiPMTriggerT_deltaEtaPhi->Fill(Propagator_Etas->at(prop_index)-Trigger_Etas->at(i), WrapCheck(Propagator_Phis->at(prop_index),Trigger_Phis->at(i)));
@@ -302,16 +360,18 @@ void HOMuon_TreeLoop_Plotter::PropTrigger_deltaEtadeltaPhi_Fill(unsigned int pro
  *At this point, no energy selection.
  */
 
-void HOMuon_TreeLoop_Plotter::TightFitandNot_Fill(unsigned int prop_index, double TightCutHalfWidth){
+void HOMuon_TreeLoop_AllSiPM_Plotter::TightFitandNot_Fill(unsigned int prop_index, double TightCutHalfWidth){
   //double cut_width = 0.087/2;
   for(unsigned int i =0; i < Trigger_Energies->size(); i++ ){
     if(Trigger_IsaSiPMs->at(i)){ //SiPM Trigger
       //Fill Energy Histogroms for Triggers Tightly Fit with Propagated Muon
       if(abs(Propagator_Etas->at(prop_index)-Trigger_Etas->at(i)) <= TightCutHalfWidth && abs(WrapCheck(Propagator_Phis->at(prop_index), Trigger_Phis->at(i))) <= TightCutHalfWidth){
+	/*
 	if(!(Propagator_IsaSiPMs->at(prop_index))){
-	  //cout << "Not a PropSiPM" << endl;
-	   }
-	   hist_TightFit_energy->Fill(Trigger_Energies->at(i));
+	  cout << "Not a PropSiPM" << endl;
+	}
+	*/
+	hist_TightFit_energy->Fill(Trigger_Energies->at(i));
 	   
 	if(Trigger_Energies->at(i)>0.2){ //Above Threshold
 	  hist_TightFitT_energy->Fill(Trigger_Energies->at(i));
@@ -335,31 +395,9 @@ void HOMuon_TreeLoop_Plotter::TightFitandNot_Fill(unsigned int prop_index, doubl
  *and those not.  Loose cut, greater than  1.5 tiles (0.087x0.087). =0.131
  */
 
-void HOMuon_TreeLoop_Plotter::LooseFitandNot_Fill(unsigned int prop_index, double LooseCutWidth){
-  //double cut_width = 0.087/2;
-  for(unsigned int i =0; i < Trigger_Energies->size(); i++ ){
-    if(Trigger_IsaSiPMs->at(i)){ //SiPM Trigger
-      //Fill Energy Histogroms for Triggers Loosely Fit with Propagated Muon
-      if(abs(Propagator_Etas->at(prop_index)-Trigger_Etas->at(i)) <= LooseCutWidth/2 && abs(WrapCheck(Propagator_Phis->at(prop_index), Trigger_Phis->at(i))) <= LooseCutWidth/2){
-	hist_LooseFit_energy->Fill(Trigger_Energies->at(i));
-	if(Trigger_Energies->at(i)>0.2){ //Above Threshold
-	  hist_LooseFitT_energy->Fill(Trigger_Energies->at(i));
-	}
-      }
-      else {
-	hist_NotLooseFit_energy->Fill(Trigger_Energies->at(i));
-	hist_NotLooseFit_deltaEtaPhi->Fill(Propagator_Etas->at(prop_index)-Trigger_Etas->at(i), WrapCheck(Propagator_Phis->at(prop_index),Trigger_Phis->at(i)));
-	if(Trigger_Energies->at(i)>0.2){ //Set Threshold
-	  hist_NotLooseFitT_energy->Fill(Trigger_Energies->at(i));
-	  hist_NotLooseFitT_deltaEtaPhi->Fill(Propagator_Etas->at(prop_index)-Trigger_Etas->at(i), WrapCheck(Propagator_Phis->at(prop_index),Trigger_Phis->at(i)));
-	}
-      }
-    }
-  }
-}
 
 /*
-void HOMuon_TreeLoop_Plotter::NotTightFit_Fill(){
+void HOMuon_TreeLoop_AllSiPM_Plotter::NotTightFit_Fill(){
   double cut_width = 0.087/2;
   for(unsigned int i =0; i < Trigger_Energies->size(); i++ ){
     if(Trigger_IsaSiPMs->at(i)){
@@ -376,12 +414,33 @@ void HOMuon_TreeLoop_Plotter::NotTightFit_Fill(){
 }
 */
 
+/*
+ * Since all Energy Histrograms should have a common form, they are held in a single map.
+ */
+
+void HOMuon_TreeLoop_AllSiPM_Plotter::FillEnergyHistograms(float energy, std::string key){
+  if(!_h1Energy.count(key)){
+    _h1Energy[key] = new TH1F(Form("energy_%s",key.c_str()), Form("Energy %s",key.c_str()), 500,-1.0,9.9);
+  }
+  _h1Energy[key]->Fill(energy);
+}
+
+/*
+ * Since all Energy Histrograms should have a common form, they are held in a single map.
+ */
+
+ void HOMuon_TreeLoop_AllSiPM_Plotter::FillEtaPhiHistograms(float eta1, float eta2, float phi1, float phi2, std::string key){
+  if(!_h2DeltaEtaDeltaPhi.count(key)){
+    _h2DeltaEtaDeltaPhi[key] = new TH2F(Form("energy_%s",key.c_str()), Form("Energy %s",key.c_str()), 400, -2.6, 2.6, 100, -3.14, 3.14);
+  }
+  _h2DeltaEtaDeltaPhi[key]->Fill(eta1-eta2, WrapCheck(phi1, phi2));
+}
 
 /*
  * Functions to facilitate the creation of historgrams, "make pretty like".
  */
 
-void HOMuon_TreeLoop_Plotter::PlotCreator(TH1F * hist, const char * title, const char * xAxis,const char * yAxis,double xMin, double xMax, int num_binmerge, bool isLogy){
+void HOMuon_TreeLoop_AllSiPM_Plotter::PlotCreator(TH1F * hist, const char * title, const char * xAxis,const char * yAxis,double xMin, double xMax, int num_binmerge, bool isLogy){
   
   hist->Sumw2(); // make sure errors are correct before rebinning
   hist->SetTitle(""); // empty the title
@@ -417,7 +476,7 @@ void HOMuon_TreeLoop_Plotter::PlotCreator(TH1F * hist, const char * title, const
   c->SaveAs(Form("../Plots/SwitchtoTree_Plots/%s.png",title));
 }
 
-void HOMuon_TreeLoop_Plotter::PlotCreator2D(TH2F* hist, const char* title, const char* xAxis, const char* yAxis, double xMin, double xMax,double yMin, double yMax,int num_xbinmerge, int num_ybinmerge, const char * type){
+void HOMuon_TreeLoop_AllSiPM_Plotter::PlotCreator2D(TH2F* hist, const char* title, const char* xAxis, const char* yAxis, double xMin, double xMax,double yMin, double yMax,int num_xbinmerge, int num_ybinmerge, const char * type){
 
   //gr = new TGraph();
   hist->RebinX(num_xbinmerge);
@@ -460,7 +519,7 @@ void HOMuon_TreeLoop_Plotter::PlotCreator2D(TH2F* hist, const char* title, const
   return;
 }
 
-double HOMuon_TreeLoop_Plotter::WrapCheck(double phi1, double phi2){
+double HOMuon_TreeLoop_AllSiPM_Plotter::WrapCheck(double phi1, double phi2){
   //double M_PI = (double) 3.14;
   double delta_phi = phi1 - phi2;
   if(delta_phi < -M_PI){

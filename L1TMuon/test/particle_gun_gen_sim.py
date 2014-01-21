@@ -32,7 +32,7 @@ process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 process.maxEvents = cms.untracked.PSet(
    # input = cms.untracked.Int32(5000)
-    input = cms.untracked.int32(10000)
+    input = cms.untracked.int32(1000)
 )
 
 # Input source
@@ -55,7 +55,7 @@ process.FEVTDEBUGoutput = cms.OutputModule("PoolOutputModule",
     splitLevel = cms.untracked.int32(0),
     eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
     outputCommands = process.FEVTDEBUGEventContent.outputCommands,
-    fileName = cms.untracked.string('SingleMu14Pt_Barrel_GEN_SIM_DIGI_L1_RECO.root'),
+    fileName = cms.untracked.string('SingleMu14Pt_R412_AllSiPM_Barrel_GEN_SIM_DIGI_L1_RECO.root'),
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
         dataTier = cms.untracked.string('')
@@ -82,7 +82,6 @@ process.generator = cms.EDProducer("FlatRandomPtGunProducer",
 	MaxEta = cms.double(1.3),
 	MinEta = cms.double(-1.3),
 	
-	#Alberto's
 	#MinPt = cms.double(3),
 	#MaxPt = cms.double(200),
 	#MaxPhi = cms.double(3.14159265359),
@@ -96,6 +95,8 @@ process.generator = cms.EDProducer("FlatRandomPtGunProducer",
     firstRun = cms.untracked.uint32(1)
 )
 
+#Taken from Jake Anderson's code
+
 # add SiPMs to HO
 process.mix.digitizers.hcal.ho.pixels = cms.int32(2500)
 process.mix.digitizers.hcal.ho.siPMCode = 1
@@ -104,7 +105,31 @@ process.mix.digitizers.hcal.ho.photoelectronsToAnalog = cms.vdouble([4.0]*16)
 #turn off HO ZS
 process.hcalRawData.HO = cms.untracked.InputTag("simHcalUnsuppressedDigis", "", "")
 
+#ascii file conditions
+process.hcales_ascii = hcales_ascii = cms.ESSource(
+	"HcalTextCalibrations",
+	input = cms.VPSet(
+	cms.PSet(
+	object = cms.string('ChannelQuality'),
+	
+	file = cms.FileInPath('L1TriggerDPGUpgrade/L1TMuon/data/chan_qual_0.txt')
+	),
+	cms.PSet(
+	object = cms.string('Pedestals'),
+	file = cms.FileInPath('L1TriggerDPGUpgrade/L1TMuon/data/test_pedestals.txt')
+	),
+	cms.PSet(
+	object = cms.string('PedestalWidths'),
+	file = cms.FileInPath('L1TriggerDPGUpgrade/L1TMuon/data/test_pedestalWidths.txt')
+	),
+	cms.PSet(
+	object = cms.string('Gains'),
+	file = cms.FileInPath('L1TriggerDPGUpgrade/L1TMuon/data/test_gains.txt')
+	),
+	)
+	)
 
+process.hcalasciiprefer = cms.ESPrefer("HcalTextCalibrations", "hcales_ascii")
 
 # Path and EndPath definitions
 
