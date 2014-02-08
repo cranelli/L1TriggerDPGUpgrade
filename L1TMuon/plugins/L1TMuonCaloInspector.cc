@@ -66,7 +66,11 @@
 #include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
 #include "Geometry/CommonDetUnit/interface/GlobalTrackingGeometry.h"
 #include "Geometry/Records/interface/GlobalTrackingGeometryRecord.h"
-//#include "DataFormats/GeometrySurface/interface/Plane.h"
+#include "DataFormats/GeometryVector/interface/Point3DBase.h"
+#include "DataFormats/GeometrySurface/interface/newTkRotation.h"
+//#include "DataFormats/GeometrySurface/interface/BoundPlane.h"
+#include "DataFormats/GeometrySurface/interface/Plane.h"
+#include "DataFormats/GeometrySurface/interface/Surface.h"
 #include "DataFormats/GeometrySurface/interface/Cylinder.h"
 #include "TrackingTools/TrajectoryState/interface/TrajectoryStateOnSurface.h"
 
@@ -82,7 +86,20 @@
 #include "TH1F.h"
 #include "TH2F.h"
 
+
+//#include "Alignment/CommonAlignment/interface/Alignable.h"
+#include "CondFormats/Alignment/interface/Definitions.h"
+#include "DataFormats/GeometrySurface/interface/Bounds.h"
+#include "DataFormats/GeometrySurface/interface/RectangularPlaneBounds.h"
+#include "MagneticField/VolumeGeometry/interface/FourPointPlaneBounds.h"
+#include "DataFormats/GeometryVector/interface/Point3DBase.h"
+//#include "DataFormats/GeometryVector/interface/Point2DBase.h"
+#include "DataFormats/GeometryVector/interface/extBasic3DVector.h"
+#include "DataFormats/GeometrySurface/interface/Bounds.h"
+
 #include <vector>
+#include <math.h>
+#include <iostream>
 
 using namespace L1TMuon;
 using namespace std;
@@ -109,9 +126,9 @@ private:
   edm::ESHandle<CaloTPGTranscoder> _caloDecoder;
 
   // Surfaces to be used for extrapolation
-  Cylinder::CylinderPointer _rpcCyl[4]; // 4 = number of stations
-  Cylinder::CylinderPointer _hoCyl;
-  //Plane::PlanePointer _hoPlane;
+  //Cylinder::CylinderPointer _rpcCyl[4]; // 4 = number of stations
+  //Cylinder::CylinderPointer _hoCyl;
+  Plane::PlanePointer _hoPlane;
 
   bool _doGen;
   edm::InputTag _genInput;
@@ -176,6 +193,10 @@ private:
   
   std::vector<Float_t> * vec_propagator_etas;
   std::vector<Float_t> * vec_propagator_phis;
+  std::vector<Float_t> * vec_propagator_xs;
+  std::vector<Float_t> * vec_propagator_ys;
+  std::vector<Float_t> * vec_propagator_zs;
+
   std::vector<bool> * vec_propagator_IsaSiPMs;
 
   //Propagated particles are placed in a vector.
@@ -190,6 +211,8 @@ private:
   bool IsaSiPM(int ieta, int iphi);
   double WrapCheck(double phi1, double phi2);
   void ConvertetaphitoHOietaiphi(double eta, double phi, int & ieta, int & iphi);
+  double ConvertEtaToTheta(double eta);
+
 
   TH1F* _counters;
   enum { ALL=0, TRUTH, RPC, DTTF, HCAL, STDMU, GLBMU };
@@ -294,7 +317,13 @@ L1TMuonCaloInspector::L1TMuonCaloInspector(const edm::ParameterSet& iConfig){
 
   ho_muon_tree->Branch("Propagator_Etas", "std::vector<Float_t>",&vec_propagator_etas);
   ho_muon_tree->Branch("Propagator_Phis", "std::vector<Float_t>",&vec_propagator_phis);
-  ho_muon_tree->Branch("Propagator_IsaSiPMs", "std::vector<bool>",&vec_propagator_IsaSiPMs);
+  ho_muon_tree->Branch("Propagator_Xs", "std::vector<Float_t>",&vec_propagator_xs);
+  ho_muon_tree->Branch("Propagator_Ys", "std::vector<Float_t>",&vec_propagator_ys);
+  ho_muon_tree->Branch("Propagator_Zs", "std::vector<Float_t>",&vec_propagator_zs);
+
+ 
+
+ ho_muon_tree->Branch("Propagator_IsaSiPMs", "std::vector<bool>",&vec_propagator_IsaSiPMs);
 
   ho_muon_tree->Branch("Trigger_Etas", "std::vector<Float_t>",&vec_trigger_etas);
   ho_muon_tree->Branch("Trigger_Phis", "std::vector<Float_t>",&vec_trigger_phis);
@@ -302,8 +331,8 @@ L1TMuonCaloInspector::L1TMuonCaloInspector(const edm::ParameterSet& iConfig){
   ho_muon_tree->Branch("Trigger_IsaSiPMs", "std::vector<bool>",&vec_trigger_IsaSiPMs);
 
   // Build surfaces for extrapolation
-  Cylinder::PositionType pos0; // mah, we do not use them, but they are
-  Cylinder::RotationType rot0; // needed in Cylinder constructor
+  //Cylinder::PositionType pos0; // mah, we do not use them, but they are
+  //Cylinder::RotationType rot0; // needed in Cylinder constructor
   
   //changing to cm
   
@@ -315,7 +344,83 @@ L1TMuonCaloInspector::L1TMuonCaloInspector(const edm::ParameterSet& iConfig){
   _rpcCyl[3] = Cylinder::build(700,pos0,rot0);
   */
 
-  _hoCyl = Cylinder::build(412.6,pos0,rot0);
+  // _hoCyl = Cylinder::build(412.6,pos0,rot0);
+
+
+  //Plane::PositionType pos0 = Point3DBase(0,0,412.6);
+  //Plane::RotationType rot0;
+
+  //Bound Plane = new BoundPlane(gp, Surface)
+
+  double HORMAX = 412.6;
+  double HOPHI = 0;
+  double HOZ = 0;
+
+  std::cout << "pos_x: " << HORMAX*cos(HOPHI) << std::endl;
+  std::cout << "pos_y: " << HORMAX*sin(HOPHI) << std::endl;
+  
+  GlobalPoint pos(HORMAX*cos(HOPHI), HORMAX*sin(HOPHI), HOZ);
+  
+  GlobalVector aZ(0,0,1);
+  GlobalVector aPhi(-1*sin(HOPHI),cos(HOPHI),0);
+  TkRotation<float> rot(aPhi, aZ);
+
+  double ETAMIN = -.3075;
+  double ETAMAX = .3075;
+
+  double THETAETAMAX = ConvertEtaToTheta(ETAMAX); //Note Increasing Eta, Decreasing Theta
+  double THETAETAMIN = ConvertEtaToTheta(ETAMIN);
+
+  cout <<"Theta of Eta Max: " << THETAETAMAX << " Theta of ETA MIN " << THETAETAMIN << endl;
+  cout << "Tan Theta of Eta Max"<< tan(THETAETAMAX) << " Tan Theta of Eta Min" << tan(THETAETAMIN) << endl;
+
+		    
+  float halfwidth = HORMAX*tan(2*M_PI/12)/2;  //float width = 100;
+  float halflength = HORMAX*(1/tan(THETAETAMAX)-1/tan(THETAETAMIN))/2;  //float length = 200;
+  float halfthickness = 0.5;  //float thickness = 300;
+
+  /*
+  float nothickness= 0.0;
+  Point3DBase<float,LocalTag> a(halfwidth, halflength,nothickness);
+  Point3DBase<float,LocalTag> b(halfwidth, -1*halflength,nothickness);
+  Point3DBase<float,LocalTag> c(-1*halfwidth, halflength,nothickness);
+  Point3DBase<float,LocalTag> d(halfwidth, -1*halflength,nothickness);
+  */
+
+  //cout << "width: " << width << " length " << length << " thickness " << thickness << endl;
+
+  RectangularPlaneBounds * rec_bounds = new RectangularPlaneBounds(halfwidth, halflength, halfthickness);
+  Bounds * bounds = rec_bounds->clone();
+
+  //FourPointPlaneBounds * bounds2 = new FourPointPlaneBounds(a,b,c,d);
+
+  cout << "width: " << bounds->width() << " length " << bounds->length() 
+       << " thickness " << bounds->thickness() << endl;
+
+  //GlobalPoint pos(0,0,412.6);
+
+  //cout <<"Test Eta to Theta" << ConvertEtaToTheta(0.087) << endl;
+  
+  _hoPlane = Plane::build(pos, rot, bounds);
+   
+   // Test _hoPlane
+   cout << "Test hoPlane:" << endl;
+   cout << "Normal Vector" << _hoPlane->normalVector() << endl;
+   std::pair<float, float> phispan, rspan, zspan; 
+   phispan = _hoPlane->phiSpan();
+   rspan = _hoPlane->rSpan();
+   zspan = _hoPlane->zSpan();
+   cout << "Phi Span" << phispan.first << " and " << phispan.second << endl;
+   cout << "R Span" << rspan.first << " and " << rspan.second << endl;
+   cout << "Z Span" << zspan.first << " and " << zspan.second << endl;
+   //Point3DBase<float,LocalTag> test_pos(0,0,0);
+   //cout << "Is test position inside bounds " << bool(_hoPlane->bounds().inside(test_pos)) << endl;
+
+//   cout << "Local Z" << _hoPlane.normalVector() << endl;
+   //cout << "Bounds" << _hoPlane->bounds() << endl;
+   // _hoPlane->phiSpan();
+
+  // _hoPlane = new BoundPlane(pos, Surface::RotationType()); //Thrid parameter is the bound
 
   /*
   _rpcCyl[0] = Cylinder::build(4000,pos0,rot0);
@@ -431,6 +536,9 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
   vec_generator_pts =0;
   vec_propagator_etas =0; 
   vec_propagator_phis =0;
+  vec_propagator_xs =0; 
+  vec_propagator_ys =0;
+  vec_propagator_zs =0;
   vec_propagator_IsaSiPMs=0;
   vec_trigger_etas = 0;
   vec_trigger_phis = 0;
@@ -443,6 +551,9 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
   delete vec_generator_pts; vec_generator_pts = new std::vector<Float_t>();
   delete vec_propagator_etas; vec_propagator_etas = new std::vector<Float_t>();
   delete vec_propagator_phis; vec_propagator_phis = new std::vector<Float_t>();
+  delete vec_propagator_xs; vec_propagator_xs = new std::vector<Float_t>();
+  delete vec_propagator_ys; vec_propagator_ys = new std::vector<Float_t>();
+  delete vec_propagator_zs; vec_propagator_zs = new std::vector<Float_t>();
   delete vec_propagator_IsaSiPMs; vec_propagator_IsaSiPMs = new std::vector<bool>();
 
   iEvent.getByLabel(_genInput,truthParticles);
@@ -564,39 +675,59 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
 				  btruth->charge(),
 				  &*bField);
     
+    
     TrajectoryStateOnSurface prop_ho = 
-      shProp->propagate(initial,*_hoCyl);
+      shProp->propagate(initial,*_hoPlane);
+    //shProp->propagate(initial,*_hoCyl);
     //TrajectoryStateOnSurface prop_rpc[4];
 
-    double prop_ho_eta, prop_ho_phi;
-    prop_ho_eta = prop_ho.globalPosition().eta();
-    prop_ho_phi = prop_ho.globalPosition().phi();
-    
-    //Propagator_Eta = prop_ho.globalPosition().eta();
-    //Propagator_Phi = prop_ho.globalPosition().phi();
-    
-    //Propagator.eta = prop_ho.globalPosition().eta();
-    //Propagator.phi = prop_ho.globalPosition().phi();
-
-    int prop_ho_ieta, prop_ho_iphi;
-    ConvertetaphitoHOietaiphi(prop_ho_eta, prop_ho_phi, prop_ho_ieta, prop_ho_iphi); //Passed by reference
-
-    //Propagator_IsaSiPM = IsaSiPM(prop_ho_ieta, prop_ho_iphi);
-    //Propagator.IsaSiPM = IsaSiPM(prop_ho_ieta, prop_ho_iphi);
-
-    
-    vec_propagator_etas->push_back(prop_ho.globalPosition().eta());
-    vec_propagator_phis->push_back(prop_ho.globalPosition().phi());
-    vec_propagator_IsaSiPMs->push_back(IsaSiPM(prop_ho_ieta, prop_ho_iphi));
-    
-    /*
-    for(int i = 0; i<4; i++){
-      prop_rpc[i] = shProp->propagate(initial,*_rpcCyl[i]);
+    if(prop_ho.isValid()){
+      //Point3DBase<float,LocalTag> local_point = prop_ho.localPosition();
+      //cout << "local point " << local_point << endl;
+      if(_hoPlane->bounds().inside(prop_ho.localPosition())){
+	//if(true){
+	cout <<"Valid Prop within Bounds" << endl;
+	cout << "Global Position " << prop_ho.globalPosition() << endl;
+	cout << "Local Position " << prop_ho.localPosition() << endl;
+	//const BasicTrajectoryState data = prop_ho.data();
+	//cout << "data " << prop_ho.data() << endl;
+	
+	double prop_ho_eta, prop_ho_phi;
+	prop_ho_eta = prop_ho.globalPosition().eta();
+	prop_ho_phi = prop_ho.globalPosition().phi();
+	
+	//Propagator_Eta = prop_ho.globalPosition().eta();
+	//Propagator_Phi = prop_ho.globalPosition().phi();
+	
+	//Propagator.eta = prop_ho.globalPosition().eta();
+	//Propagator.phi = prop_ho.globalPosition().phi();
+	
+	int prop_ho_ieta, prop_ho_iphi;
+	ConvertetaphitoHOietaiphi(prop_ho_eta, prop_ho_phi, prop_ho_ieta, prop_ho_iphi); //Passed by reference
+	
+	//Propagator_IsaSiPM = IsaSiPM(prop_ho_ieta, prop_ho_iphi);
+	//Propagator.IsaSiPM = IsaSiPM(prop_ho_ieta, prop_ho_iphi);
+	
+	
+	vec_propagator_etas->push_back(prop_ho.globalPosition().eta());
+	vec_propagator_phis->push_back(prop_ho.globalPosition().phi());
+	vec_propagator_xs->push_back(prop_ho.globalPosition().x());
+	vec_propagator_ys->push_back(prop_ho.globalPosition().y());
+	vec_propagator_zs->push_back(prop_ho.globalPosition().z());
+	vec_propagator_IsaSiPMs->push_back(IsaSiPM(prop_ho_ieta, prop_ho_iphi));
+	
+	cout <<prop_ho.globalPosition().x() << endl;
+	
+	/*
+	  for(int i = 0; i<4; i++){
+	  prop_rpc[i] = shProp->propagate(initial,*_rpcCyl[i]);
+	  }
+	*/
+	
+	//See how many truth muons go through SiPM sectors after propogation.
+	//First need to convert to ieta and iphi.  
+      }
     }
-    */
-
-    //See how many truth muons go through SiPM sectors after propogation.
-    //First need to convert to ieta and iphi.  
   }
     /*
      * Work with the HO_reco
@@ -1327,7 +1458,7 @@ void L1TMuonCaloInspector::ConvertetaphitoHOietaiphi(double eta, double phi, int
   /*
 void L1TMuonCaloInspector::fillStationDistributionHistograms(TriggerPrimitiveStationMap stubs, std::string key){
   if(!_h1StationDistribution.count(key)){
-    _h1StationDistribution[key] = 
+  _h1StationDistribution[key] = 
       _fileService->make<TH1F>(Form("%s_Station_Distribution",key.c_str()),
 			       Form("%s Station Distribution",key.c_str()),
 				   11,0.5,11.5);
@@ -1361,6 +1492,19 @@ void L1TMuonCaloInspector::fillStationDistributionHistograms(TriggerPrimitiveSta
     return;
 }
 */
+
+
+
+/*
+ * HO Geometry Code
+ */
+
+double L1TMuonCaloInspector::ConvertEtaToTheta(double eta){
+  double theta;
+  theta = 2*atan(exp(-1*eta));
+
+  return theta;
+}
 
 //define this as a plug-in
 DEFINE_FWK_MODULE(L1TMuonCaloInspector);
