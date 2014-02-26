@@ -9,8 +9,8 @@
 
 
 void HOMuon_AllSiPM_Plotter(const char *file = 
-		    "../RootFiles/L1ITMuonSingleMu_14Pt_R412_AllSiPM_caloInspector_New.root",
-		    const char* tree_loc = "L1TMuonCaloInsp/ho_muon_tree") {
+			    "../RootFiles/L1ITMuonSingleMu_14Pt_Plane_caloInspector_New.root",
+			    const char* tree_loc = "L1TMuonCaloInsp/ho_muon_tree") {
   TFile* inFile = TFile::Open(file);
   //std::cout << inFile << std::endl;
   TTree* T = (TTree*)inFile->Get(tree_loc);

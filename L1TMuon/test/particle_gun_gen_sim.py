@@ -32,7 +32,7 @@ process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 process.maxEvents = cms.untracked.PSet(
    # input = cms.untracked.Int32(5000)
-    input = cms.untracked.int32(1000)
+    input = cms.untracked.int32(10)
 )
 
 # Input source
@@ -51,11 +51,13 @@ process.configurationMetadata = cms.untracked.PSet(
 
 # Output definition
 
+#New ouputCommands: outputCommands = cms.untracked.vstring('keep *','drop *_mix_*_*'),
+
 process.FEVTDEBUGoutput = cms.OutputModule("PoolOutputModule",
     splitLevel = cms.untracked.int32(0),
     eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
     outputCommands = process.FEVTDEBUGEventContent.outputCommands,
-    fileName = cms.untracked.string('SingleMu14Pt_R412_AllSiPM_Barrel_GEN_SIM_DIGI_L1_RECO.root'),
+    fileName = cms.untracked.string('SingleMu14Pt_AllSiPM_SingleTile_GEN_SIM_DIGI_L1_RECO.root'),
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
         dataTier = cms.untracked.string('')
@@ -77,10 +79,10 @@ process.generator = cms.EDProducer("FlatRandomPtGunProducer",
         MinPt = cms.double(14),
 	MaxPt = cms.double(14),
         PartID = cms.vint32(-13), #-13 is muons, 211 is Pi+       
-        MaxPhi = cms.double(3.1415),
-	MinPhi = cms.double(-3.1415),
-	MaxEta = cms.double(1.3),
-	MinEta = cms.double(-1.3),
+        MaxPhi = cms.double(0.0),
+	MinPhi = cms.double(0.0),
+	MaxEta = cms.double(0.0),
+	MinEta = cms.double(0.0),
 	
 	#MinPt = cms.double(3),
 	#MaxPt = cms.double(200),

@@ -33,6 +33,7 @@
 #include<sstream>
 #include<cmath>
 
+#define THRESHOLD 0.2
 
 
 void HOMuon_TreeLoop_Plotter::Begin(TTree * /*tree*/)
@@ -43,16 +44,24 @@ void HOMuon_TreeLoop_Plotter::Begin(TTree * /*tree*/)
    TString option = GetOption();
 
    hist_SiPM_energy = new TH1F("SiPM_energy_hist", "SiPM energy hist", 500,-1.0,9.9);
-   hist_PropSiPMT_energy = new TH1F("PropSiPMT_energy_hist", "PropSiPMT energy hist", 100,-0.1,9.9);
+   hist_HPD_energy = new TH1F("HPE_energy_hist", "HPE energy hist", 500,-1.0,9.9);
+   hist_AllPropTriggerT_energy = new TH1F("AllPropTriggerT_energy_hist", "PropSiPMT energy hist", 100,-0.1,9.9);
+   hist_SiPMPropTriggerT_energy = new TH1F("SiPMPropTriggerT_energy_hist", "PropSiPMT energy hist", 100,-0.1,9.9);
    hist_PropSiPM_Map = new TH2F("PropSiPM_Map", "PropSiPM Map", 100, -1.5, 1.5, 100, -3.15, 3.15);
    hist_TriggerSiPM_Map = new TH2F("TriggerSiPM_Map", "TriggerSiPM Map", 60, -1.31, 1.31, 144, -3.15, 3.15);
    hist_TriggerSiPMT_Map = new TH2F("TriggerSiPMT_Map", "TriggerSiPM above Threshold Map", 60, -1.31, 1.31, 144, -3.15, 3.15);
    hist_PropTriggerSiPMT_Map = new TH2F("PropTriggerSiPMT_Map", "Position of Props for TriggerSiPM above Threshold Map", 60, -1.31, 1.31, 144, -3.15, 3.15);
    //hist_GeneratorTriggerSiPMT_Map = new TH2F("PropTriggerSiPMT_Map", "Position of Props for TriggerSiPM above Threshold Map", 60, -1.31, 1.31, 144, -3.15, 3.15);
+   
+   hist_AllPropTriggerT_deltaEta = new TH1F("DeltaEta_AllPropTrigger", "Delta Eta Propagator - Trigger", 100, -0.3, 0.3);
+   hist_AllPropTriggerT_deltaPhi = new TH1F("DeltaPhi_AllPropTrigger", "Delta Phi Propagator - Trigger", 100, -0.3, 0.3);
+   hist_AllPropTriggerT_deltaEtaPhi = new TH2F("DeltaEtaPhi_AllPropTrigger", "Delta Phi v Delta Eta SiPM Propagator -Trigger", 400, -3.0, 3.0, 400, -3.14, 3.14);
+
    hist_SiPMPropTriggerT_deltaEta = new TH1F("DeltaEta_SiPMPropTrigger", "Delta Eta Propagator - Trigger", 100, -0.3, 0.3);
    hist_SiPMPropTriggerT_deltaPhi = new TH1F("DeltaPhi_SiPMPropTrigger", "Delta Phi Propagator - Trigger", 100, -0.3, 0.3);
    hist_SiPMPropTriggerT_deltaEtaPhi = new TH2F("DeltaEtaPhi_SiPMPropTrigger", "Delta Phi v Delta Eta SiPM Propagator -Trigger", 400, -3.0, 3.0, 400, -3.14, 3.14);
-   hist_PropSiPMTriggerT_deltaEtaPhi = new TH2F("DeltaEtaPhi_PropSiPMTrigger", "Delta Phi v Delta Eta Propagator -Trigger", 400, -3.0, 3.0, 400, -3.14, 3.14);
+
+   //hist_PropSiPMTriggerT_deltaEtaPhi = new TH2F("DeltaEtaPhi_PropSiPMTrigger", "Delta Phi v Delta Eta Propagator -Trigger", 400, -3.0, 3.0, 400, -3.14, 3.14);
    hist_TightFit_energy = new TH1F("Tight_energy_hist", "Tight energy hist", 500,-1.0,9.9);
    hist_NotTightFit_energy = new TH1F("NotTight_energy_hist", "Not Tight energy hist", 500,-1.0,9.9);
    hist_TightFitT_energy = new TH1F("TightT_energy_hist", "Tight with Threshold energy Distribution", 500,-1.0,9.9);
@@ -104,7 +113,6 @@ Bool_t HOMuon_TreeLoop_Plotter::Process(Long64_t entry)
   
   fChain->GetEntry(entry);
 
-
   /*
    * Have given the constraints for each histogram in it's own function,
    * so they can easily be commented out.
@@ -129,7 +137,7 @@ Bool_t HOMuon_TreeLoop_Plotter::Process(Long64_t entry)
     PropSiPM_Map_Fill(i);
 
     //Histogram of Energies for SiPM Triggers for Props.
-    PropSiPMT_energy_Fill(i);
+    PropTriggerT_energy_Fill(i);
 
     //deltaEta deltaPhi Plots for SiPM Triggers for Props. 
     PropTrigger_deltaEtadeltaPhi_Fill(i);
@@ -165,7 +173,8 @@ void HOMuon_TreeLoop_Plotter::Terminate()
    * Create and Save Plots
    */
 
-  PlotCreator(hist_SiPM_energy, "SiPM_Energy","Energy GeV", "Counts",-0.2, 5.0, 3, true);
+  //PlotCreator(hist_SiPM_energy, "SiPM_Energy","Energy GeV", "Counts",-0.2, 6.0, 3, true);
+  //PlotCreator(hist_HPD_energy, "HPD_Energy","Energy GeV", "Counts",-0.2, 6.0, 3, true);
 
   // PlotCreator2D(hist_PropSiPM_Map,"PropSiPM_Map","#eta", "#phi", -1.3, 1.3, -3.15, 3.15,2,2,"box");
 
@@ -177,17 +186,27 @@ void HOMuon_TreeLoop_Plotter::Terminate()
 
   //PlotCreator2D(hist_GeneratorTriggerSiPMT_Map,"Generator_TriggerSiPMT_Map","#eta", "#phi", -1.31, 1.31, -3.15, 3.15,1,1,"box");
 
-  //PlotCreator(hist_PropSiPMT_energy, "PropSiPMT_energy", "Energy GeV","Counts", -0.2, 5.0, 1, false);
+  PlotCreator(hist_AllPropTriggerT_energy, "AllPropTriggerT_energy", "Energy GeV","Counts", -0.2, 5.0, 1, false);
   
-  //PlotCreator(hist_SiPMPropTriggerT_deltaEta, "PropSiPMTriggerT_deltaEta", "#Delta #eta","Counts",-0.2, 0.2, 2, false);
+  PlotCreator(hist_AllPropTriggerT_deltaEta, "AllSiPMTriggerT_deltaEta", "#Delta #eta","Counts",-0.2, 0.2, 2, false);
 
-  //PlotCreator(hist_SiPMPropTriggerT_deltaPhi, "PropSiPMTriggerT_deltaPhi", "#Delta #phi","Counts",-0.2,0.2,2,false);
+  PlotCreator(hist_AllPropTriggerT_deltaPhi, "AllSiPMTriggerT_deltaPhi", "#Delta #phi","Counts",-0.2,0.2,2,false);
 
-  //PlotCreator2D(hist_SiPMPropTriggerT_deltaEtaPhi,"DeltaEtaPhi_SiPMPropTriggerT","#eta", "#phi", -3.0, 3.0, -3.14, 3.14,1,1,"CONT0");
+  PlotCreator2D(hist_AllPropTriggerT_deltaEtaPhi,"DeltaEtaPhi_AllPropTriggerT","#Delta #eta", "#Delta #phi", -0.4, 0.4, -0.4, 0.4,1,1,"CONT0");
 
-  //PlotCreator2D(hist_PropSiPMTriggerT_deltaEtaPhi,"DeltaEtaPhi_PropSiPMTriggerT","#eta", "#phi", -3.0, 3.0, -3.14, 3.14,1,1,"CONT0");
+  //PlotCreator(hist_SiPMPropTriggerT_energy, "SiPMPropTriggerT_energy", "Energy GeV","Counts", -0.2, 5.0, 1, false);
+  
+  // PlotCreator(hist_SiPMPropTriggerT_deltaEta, "PropSiPMTriggerT_deltaEta", "#Delta #eta","Counts",-0.2, 0.2, 2, false);
 
-  PlotCreator(hist_TightFit_energy, "Energy Distribution for Tight Fit", "Energy GeV", "Counts", -0.2, 5.0, 3, false);
+  // PlotCreator(hist_SiPMPropTriggerT_deltaPhi, "PropSiPMTriggerT_deltaPhi", "#Delta #phi","Counts",-0.2,0.2,2,false);
+
+  //PlotCreator2D(hist_SiPMPropTriggerT_deltaEtaPhi,"DeltaEtaPhi_SiPMPropTriggerT","#Delta #eta", "#Delta #phi", -0.4, 0.4, -0.4, 0.4,1,1,"CONT0");
+
+  // SiPMProp are muons propagated through SiPM sectors, where as Prop contains all propagated muons.
+
+  // PlotCreator2D(hist_PropSiPMTriggerT_deltaEtaPhi,"DeltaEtaPhi_PropSiPMTriggerT","#Delta #eta", "#Delta #phi", -0.4, 0.4, -0.4, 0.4,1,1,"CONT0");
+
+  //PlotCreator(hist_TightFit_energy, "Energy Distribution for Tight Fit", "Energy GeV", "Counts", -0.2, 5.0, 3, false);
 
   // PlotCreator(hist_NotLooseFit_energy, "Energy Distribution for Not Loose Fit", "Energy GeV", "Counts", -0.2, 2.0, 1, true);
 
@@ -197,9 +216,9 @@ void HOMuon_TreeLoop_Plotter::Terminate()
 
   //PlotCreator(hist_NotTightFitT_energy, "Energy Distribution for Not Tight Fit with Threshold", "Energy GeV", "Counts", -0.2, 5.0, 2, true);
 
-  PlotCreator(hist_NotLooseFitT_energy,  "Energy Distribution for Not Loose Fit with Threshold", "Energy GeV", "Counts", -0.2, 5.0, 2,false);
+  //PlotCreator(hist_NotLooseFitT_energy,  "Energy Distribution for Not Loose Fit with Threshold", "Energy GeV", "Counts", -0.2, 5.0, 2,false);
 
-  PlotCreator2D(hist_NotLooseFitT_deltaEtaPhi,"DeltaEtaPhi_NotLooseFit","#Delta #eta", "#Delta #phi", -1.0, 1.0, -1.0, 1.0,1,1,"CONT0");
+  //PlotCreator2D(hist_NotLooseFitT_deltaEtaPhi,"DeltaEtaPhi_NotLooseFit","#Delta #eta", "#Delta #phi", -1.0, 1.0, -1.0, 1.0,1,1,"CONT0");
 
   //PlotCreator2D(hist_NotTightFit_deltaEtaPhi,"DeltaEtaPhi_NotTightFit","#eta", "#phi", -2.0, 1.0, -3.14, 3.14,1,1,"CONT0");
   
@@ -213,7 +232,7 @@ void HOMuon_TreeLoop_Plotter::Terminate()
   TFile *outfile = TFile::Open("out_50Pt_Muon.root","RECREATE");
   hist_SiPM_energy->Write();
   hist_PropSiPM_Map->Write();
-  hist_PropSiPMT_energy->Write();
+  hist_SiPMPropTriggerT_energy->Write();
   hist_SiPMPropTriggerT_deltaEta->Write();
   hist_SiPMPropTriggerT_deltaPhi->Write();
   hist_SiPMPropTriggerT_deltaEtaPhi->Write();
@@ -228,6 +247,8 @@ void HOMuon_TreeLoop_Plotter::SiPM_energy_Fill(){
   for(unsigned int i =0; i < Trigger_Energies->size(); i++ ){
     if(Trigger_IsaSiPMs->at(i)){
       hist_SiPM_energy->Fill(Trigger_Energies->at(i));
+    } else {
+      hist_HPD_energy->Fill(Trigger_Energies->at(i));
     }
   }
 }
@@ -264,11 +285,12 @@ void HOMuon_TreeLoop_Plotter::TriggerSiPM_Map_Fill(){
  * are propagated to pass through the SiPM Sector.
  */
 
-void HOMuon_TreeLoop_Plotter::PropSiPMT_energy_Fill(unsigned int prop_index){
-  if(Propagator_IsaSiPMs->at(prop_index)){
-    for(unsigned int i =0; i < Trigger_Energies->size(); i++ ){
-      if(Trigger_IsaSiPMs->at(i) && (Trigger_Energies->at(i) >= 0.2)){ //SiPM Trigger Above Threshold
-	hist_PropSiPMT_energy->Fill(Trigger_Energies->at(i));
+void HOMuon_TreeLoop_Plotter::PropTriggerT_energy_Fill(unsigned int prop_index){
+  for(unsigned int i =0; i < Trigger_Energies->size(); i++ ){
+    if(Trigger_IsaSiPMs->at(i) && (Trigger_Energies->at(i) >= THRESHOLD)){ //SiPM Trigger Above Threshold
+      hist_AllPropTriggerT_energy->Fill(Trigger_Energies->at(i));
+      if(Propagator_IsaSiPMs->at(prop_index)){
+	hist_SiPMPropTriggerT_energy->Fill(Trigger_Energies->at(i));
       }
     }
   }
@@ -282,8 +304,10 @@ void HOMuon_TreeLoop_Plotter::PropSiPMT_energy_Fill(unsigned int prop_index){
 
 void HOMuon_TreeLoop_Plotter::PropTrigger_deltaEtadeltaPhi_Fill(unsigned int prop_index){
   for(unsigned int i =0; i < Trigger_Energies->size(); i++ ){
-    if(Trigger_IsaSiPMs->at(i) && (Trigger_Energies->at(i) >= 0.2)){ //SiPM Trigger Above Threshold
-      hist_PropSiPMTriggerT_deltaEtaPhi->Fill(Propagator_Etas->at(prop_index)-Trigger_Etas->at(i), WrapCheck(Propagator_Phis->at(prop_index),Trigger_Phis->at(i)));
+    if(Trigger_IsaSiPMs->at(i) && (Trigger_Energies->at(i) >= THRESHOLD)){ //SiPM Trigger Above Threshold
+      hist_AllPropTriggerT_deltaEta->Fill(Propagator_Etas->at(prop_index)-Trigger_Etas->at(i));
+      hist_AllPropTriggerT_deltaPhi->Fill(WrapCheck(Propagator_Phis->at(prop_index),Trigger_Phis->at(i)));
+      hist_AllPropTriggerT_deltaEtaPhi->Fill(Propagator_Etas->at(prop_index)-Trigger_Etas->at(i), WrapCheck(Propagator_Phis->at(prop_index),Trigger_Phis->at(i)));
       hist_PropTriggerSiPMT_Map->Fill(Propagator_Etas->at(prop_index), Propagator_Phis->at(prop_index));
       // hist_GeneratorTriggerSiPMT_Map->Fill(Generator_Eta, Generator_Phi);
       if(Propagator_IsaSiPMs->at(prop_index)){
@@ -313,14 +337,14 @@ void HOMuon_TreeLoop_Plotter::TightFitandNot_Fill(unsigned int prop_index, doubl
 	   }
 	   hist_TightFit_energy->Fill(Trigger_Energies->at(i));
 	   
-	if(Trigger_Energies->at(i)>0.2){ //Above Threshold
+	if(Trigger_Energies->at(i)>THRESHOLD){ //Above Threshold
 	  hist_TightFitT_energy->Fill(Trigger_Energies->at(i));
 	}
       }
       else {
 	hist_NotTightFit_energy->Fill(Trigger_Energies->at(i));
 	hist_NotTightFit_deltaEtaPhi->Fill(Propagator_Etas->at(prop_index)-Trigger_Etas->at(i), WrapCheck(Propagator_Phis->at(prop_index),Trigger_Phis->at(i)));
-	if(Trigger_Energies->at(i)>0.2){ //Set Threshold
+	if(Trigger_Energies->at(i)>THRESHOLD){ //Set Threshold
 	  hist_NotTightFitT_energy->Fill(Trigger_Energies->at(i));
 	  hist_NotTightFitT_deltaEtaPhi->Fill(Propagator_Etas->at(prop_index)-Trigger_Etas->at(i), WrapCheck(Propagator_Phis->at(prop_index),Trigger_Phis->at(i)));
 	}
@@ -342,14 +366,14 @@ void HOMuon_TreeLoop_Plotter::LooseFitandNot_Fill(unsigned int prop_index, doubl
       //Fill Energy Histogroms for Triggers Loosely Fit with Propagated Muon
       if(abs(Propagator_Etas->at(prop_index)-Trigger_Etas->at(i)) <= LooseCutWidth/2 && abs(WrapCheck(Propagator_Phis->at(prop_index), Trigger_Phis->at(i))) <= LooseCutWidth/2){
 	hist_LooseFit_energy->Fill(Trigger_Energies->at(i));
-	if(Trigger_Energies->at(i)>0.2){ //Above Threshold
+	if(Trigger_Energies->at(i)>THRESHOLD){ //Above Threshold
 	  hist_LooseFitT_energy->Fill(Trigger_Energies->at(i));
 	}
       }
       else {
 	hist_NotLooseFit_energy->Fill(Trigger_Energies->at(i));
 	hist_NotLooseFit_deltaEtaPhi->Fill(Propagator_Etas->at(prop_index)-Trigger_Etas->at(i), WrapCheck(Propagator_Phis->at(prop_index),Trigger_Phis->at(i)));
-	if(Trigger_Energies->at(i)>0.2){ //Set Threshold
+	if(Trigger_Energies->at(i)>THRESHOLD){ //Set Threshold
 	  hist_NotLooseFitT_energy->Fill(Trigger_Energies->at(i));
 	  hist_NotLooseFitT_deltaEtaPhi->Fill(Propagator_Etas->at(prop_index)-Trigger_Etas->at(i), WrapCheck(Propagator_Phis->at(prop_index),Trigger_Phis->at(i)));
 	}

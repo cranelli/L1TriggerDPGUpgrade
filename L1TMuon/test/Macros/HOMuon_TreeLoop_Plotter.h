@@ -70,6 +70,7 @@ public :
      // My stuff
      
      TH1F * hist_SiPM_energy;
+     TH1F * hist_HPD_energy;
      void SiPM_energy_Fill();
      TH2F * hist_PropSiPM_Map;
      void PropSiPM_Map_Fill(unsigned int i);
@@ -78,12 +79,15 @@ public :
      TH2F * hist_PropTriggerSiPMT_Map;
      TH2F * hist_GeneratorTriggerSiPMT_Map;
      void TriggerSiPM_Map_Fill();
-     TH1F * hist_PropSiPMT_energy;
-     void PropSiPMT_energy_Fill(unsigned int i);
+     TH1F * hist_SiPMPropTriggerT_energy;
+     TH1F * hist_AllPropTriggerT_energy;
+     void PropTriggerT_energy_Fill(unsigned int i);
      TH1F * hist_SiPMPropTriggerT_deltaEta;
      TH1F * hist_SiPMPropTriggerT_deltaPhi;
      TH2F * hist_SiPMPropTriggerT_deltaEtaPhi;
-     TH2F * hist_PropSiPMTriggerT_deltaEtaPhi;
+     TH1F * hist_AllPropTriggerT_deltaEta;
+     TH1F * hist_AllPropTriggerT_deltaPhi;
+     TH2F * hist_AllPropTriggerT_deltaEtaPhi;
      void PropTrigger_deltaEtadeltaPhi_Fill(unsigned int i);
      TH1F * hist_TightFit_energy;
      TH1F * hist_NotTightFit_energy;

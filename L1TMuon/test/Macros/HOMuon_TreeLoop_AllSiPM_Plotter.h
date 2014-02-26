@@ -18,6 +18,8 @@
 // Header file for the classes stored in the TTree if any.
 #include <vector>
 
+#define THRESHOLD 0.2
+
 // Fixed size dimensions of array or collections stored in the TTree if any.
 
 class HOMuon_TreeLoop_AllSiPM_Plotter : public TSelector {
@@ -72,14 +74,21 @@ public :
    //Hold the Histograms of the same type in Maps
 
    std::map<std::string,TH1F*> _h1Energy;
+   std::map<std::string,TH1F*> _h1DeltaEta;
+   std::map<std::string,TH1F*> _h1DeltaPhi;
    std::map<std::string,TH2F*> _h2DeltaEtaDeltaPhi;
+   std::map<std::string,TH2F*> _h2EtaPhiMap;
+   
    //std::map<std::string,TH2F*> _h2Map; 
 
    void FillEnergyHistograms(float energy, std::string key);
    void FillEtaPhiHistograms(float eta1, float eta2, float phi1, float phi2, std::string key);
 
+   void FillEtaPhiMapHistograms(float eta, float phi, std::string key);
+
    TH1F * hist_SiPM_energy;
    TH1F * hist_HPD_energy;
+   void Propagator_Map_Fill(unsigned int i);
    void SiPM_energy_Fill();
    TH1F * hist_wheelzero_energy;
    void WheelZero_energy_Fill();
@@ -111,6 +120,7 @@ public :
    TH2F * hist_NotLooseFit_deltaEtaPhi;
    TH2F * hist_NotLooseFitT_deltaEtaPhi;
    void LooseFitandNot_Fill(unsigned int i, double LooseCutWidth);
+   void AllPropSiPMTriggerT_Fill(unsigned int i);
    // void NotTightFit_Fill();
        
      void PlotCreator(TH1F * hist,const char * title, const char * xAxis, const char * yAxis,double xMin, double xMax, int num_binmerge=1, bool isLogy=false);

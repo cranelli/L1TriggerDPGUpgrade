@@ -58,6 +58,7 @@
 #include "Geometry/Records/interface/CaloGeometryRecord.h"
 #include "Geometry/CaloTopology/interface/HcalTopology.h"
 #include "Geometry/CaloGeometry/interface/CaloGeometry.h"
+#include "Geometry/CaloGeometry/interface/CaloCellGeometry.h"
 #include "Geometry/Records/interface/HcalGeometryRecord.h"
 
 #include "TrackPropagation/SteppingHelixPropagator/interface/SteppingHelixPropagator.h"
@@ -96,10 +97,16 @@
 //#include "DataFormats/GeometryVector/interface/Point2DBase.h"
 #include "DataFormats/GeometryVector/interface/extBasic3DVector.h"
 #include "DataFormats/GeometrySurface/interface/Bounds.h"
+#include "DataFormats/HcalDetId/interface/HcalDetId.h"
+#include "DataFormats/HcalDetId/interface/HcalSubdetector.h"
 
 #include <vector>
 #include <math.h>
 #include <iostream>
+
+//For the HO cells
+#define n_eta 30
+#define n_phi 72
 
 using namespace L1TMuon;
 using namespace std;
@@ -128,7 +135,7 @@ private:
   // Surfaces to be used for extrapolation
   //Cylinder::CylinderPointer _rpcCyl[4]; // 4 = number of stations
   //Cylinder::CylinderPointer _hoCyl;
-  Plane::PlanePointer _hoPlane;
+  Plane::PlanePointer _hoPlanes[n_eta][n_phi];
 
   bool _doGen;
   edm::InputTag _genInput;
@@ -212,6 +219,7 @@ private:
   double WrapCheck(double phi1, double phi2);
   void ConvertetaphitoHOietaiphi(double eta, double phi, int & ieta, int & iphi);
   double ConvertEtaToTheta(double eta);
+  void SetHOGeometry();
 
 
   TH1F* _counters;
@@ -330,106 +338,8 @@ L1TMuonCaloInspector::L1TMuonCaloInspector(const edm::ParameterSet& iConfig){
   ho_muon_tree->Branch("Trigger_Energies", "std::vector<Float_t>",&vec_trigger_energies);
   ho_muon_tree->Branch("Trigger_IsaSiPMs", "std::vector<bool>",&vec_trigger_IsaSiPMs);
 
-  // Build surfaces for extrapolation
-  //Cylinder::PositionType pos0; // mah, we do not use them, but they are
-  //Cylinder::RotationType rot0; // needed in Cylinder constructor
-  
-  //changing to cm
-  
-  //These r values are unconfirmed.
-  /*
- _rpcCyl[0] = Cylinder::build(400,pos0,rot0);
-  _rpcCyl[1] = Cylinder::build(500,pos0,rot0);
-  _rpcCyl[2] = Cylinder::build(600,pos0,rot0);
-  _rpcCyl[3] = Cylinder::build(700,pos0,rot0);
-  */
 
-  // _hoCyl = Cylinder::build(412.6,pos0,rot0);
-
-
-  //Plane::PositionType pos0 = Point3DBase(0,0,412.6);
-  //Plane::RotationType rot0;
-
-  //Bound Plane = new BoundPlane(gp, Surface)
-
-  double HORMAX = 412.6;
-  double HOPHI = 0;
-  double HOZ = 0;
-
-  std::cout << "pos_x: " << HORMAX*cos(HOPHI) << std::endl;
-  std::cout << "pos_y: " << HORMAX*sin(HOPHI) << std::endl;
-  
-  GlobalPoint pos(HORMAX*cos(HOPHI), HORMAX*sin(HOPHI), HOZ);
-  
-  GlobalVector aZ(0,0,1);
-  GlobalVector aPhi(-1*sin(HOPHI),cos(HOPHI),0);
-  TkRotation<float> rot(aPhi, aZ);
-
-  double ETAMIN = -.3075;
-  double ETAMAX = .3075;
-
-  double THETAETAMAX = ConvertEtaToTheta(ETAMAX); //Note Increasing Eta, Decreasing Theta
-  double THETAETAMIN = ConvertEtaToTheta(ETAMIN);
-
-  cout <<"Theta of Eta Max: " << THETAETAMAX << " Theta of ETA MIN " << THETAETAMIN << endl;
-  cout << "Tan Theta of Eta Max"<< tan(THETAETAMAX) << " Tan Theta of Eta Min" << tan(THETAETAMIN) << endl;
-
-		    
-  float halfwidth = HORMAX*tan(2*M_PI/12)/2;  //float width = 100;
-  float halflength = HORMAX*(1/tan(THETAETAMAX)-1/tan(THETAETAMIN))/2;  //float length = 200;
-  float halfthickness = 0.5;  //float thickness = 300;
-
-  /*
-  float nothickness= 0.0;
-  Point3DBase<float,LocalTag> a(halfwidth, halflength,nothickness);
-  Point3DBase<float,LocalTag> b(halfwidth, -1*halflength,nothickness);
-  Point3DBase<float,LocalTag> c(-1*halfwidth, halflength,nothickness);
-  Point3DBase<float,LocalTag> d(halfwidth, -1*halflength,nothickness);
-  */
-
-  //cout << "width: " << width << " length " << length << " thickness " << thickness << endl;
-
-  RectangularPlaneBounds * rec_bounds = new RectangularPlaneBounds(halfwidth, halflength, halfthickness);
-  Bounds * bounds = rec_bounds->clone();
-
-  //FourPointPlaneBounds * bounds2 = new FourPointPlaneBounds(a,b,c,d);
-
-  cout << "width: " << bounds->width() << " length " << bounds->length() 
-       << " thickness " << bounds->thickness() << endl;
-
-  //GlobalPoint pos(0,0,412.6);
-
-  //cout <<"Test Eta to Theta" << ConvertEtaToTheta(0.087) << endl;
-  
-  _hoPlane = Plane::build(pos, rot, bounds);
-   
-   // Test _hoPlane
-   cout << "Test hoPlane:" << endl;
-   cout << "Normal Vector" << _hoPlane->normalVector() << endl;
-   std::pair<float, float> phispan, rspan, zspan; 
-   phispan = _hoPlane->phiSpan();
-   rspan = _hoPlane->rSpan();
-   zspan = _hoPlane->zSpan();
-   cout << "Phi Span" << phispan.first << " and " << phispan.second << endl;
-   cout << "R Span" << rspan.first << " and " << rspan.second << endl;
-   cout << "Z Span" << zspan.first << " and " << zspan.second << endl;
-   //Point3DBase<float,LocalTag> test_pos(0,0,0);
-   //cout << "Is test position inside bounds " << bool(_hoPlane->bounds().inside(test_pos)) << endl;
-
-//   cout << "Local Z" << _hoPlane.normalVector() << endl;
-   //cout << "Bounds" << _hoPlane->bounds() << endl;
-   // _hoPlane->phiSpan();
-
-  // _hoPlane = new BoundPlane(pos, Surface::RotationType()); //Thrid parameter is the bound
-
-  /*
-  _rpcCyl[0] = Cylinder::build(4000,pos0,rot0);
-  _rpcCyl[1] = Cylinder::build(5000,pos0,rot0);
-  _rpcCyl[2] = Cylinder::build(6000,pos0,rot0);
-  _rpcCyl[3] = Cylinder::build(7000,pos0,rot0);
-
-  _hoCyl = Cylinder::build(3600,pos0,rot0);
-  */
+  //SetHOGeometry();
 }
 
 
@@ -556,7 +466,32 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
   delete vec_propagator_zs; vec_propagator_zs = new std::vector<Float_t>();
   delete vec_propagator_IsaSiPMs; vec_propagator_IsaSiPMs = new std::vector<bool>();
 
+
   iEvent.getByLabel(_genInput,truthParticles);
+
+  
+  
+  //looking for a way to loop over each of the det ID's.  
+  
+
+  //Only need to define Propagator Surface Once
+  if(_hoPlanes[n_eta][n_phi]==NULL){
+    SetHOGeometry();
+  }
+  
+  /*
+  //auto bho_reco_det = hoRecoHits->begin();
+  //auto eho_reco_det = hoRecoHits->end();
+  //int count =0;
+  // for( ; bho_reco_det != eho_reco_det; ++bho_reco_det ) {
+  //cout <<"Det Id" <<  bho_reco_det->id() << endl;
+  //cout <<"HO Depth" << bho_reco_det->id().depth() << endl;
+  //cout << caloGeo->getPosition(bho_reco_det->id()) << endl;  
+  // count ++
+  */
+
+
+
   auto btruth = truthParticles->cbegin();
   auto etruth = truthParticles->cend();
   //}
@@ -675,63 +610,67 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
 				  btruth->charge(),
 				  &*bField);
     
-    
-    TrajectoryStateOnSurface prop_ho = 
-      shProp->propagate(initial,*_hoPlane);
-    //shProp->propagate(initial,*_hoCyl);
-    //TrajectoryStateOnSurface prop_rpc[4];
 
-    if(prop_ho.isValid()){
-      //Point3DBase<float,LocalTag> local_point = prop_ho.localPosition();
-      //cout << "local point " << local_point << endl;
-      if(_hoPlane->bounds().inside(prop_ho.localPosition())){
+    
+    for(int i=0; i< 12; i++){
+      TrajectoryStateOnSurface prop_ho = 
+	shProp->propagate(initial,*_hoPlanes[i]);
+      //shProp->propagate(initial,*_hoCyl);
+      //TrajectoryStateOnSurface prop_rpc[4];
+      
+      if(prop_ho.isValid()){
+	//Point3DBase<float,LocalTag> local_point = prop_ho.localPosition();
+	//cout << "local point " << local_point << endl;
+	if(_hoPlanes[i]->bounds().inside(prop_ho.localPosition())){
 	//if(true){
-	cout <<"Valid Prop within Bounds" << endl;
-	cout << "Global Position " << prop_ho.globalPosition() << endl;
-	cout << "Local Position " << prop_ho.localPosition() << endl;
-	//const BasicTrajectoryState data = prop_ho.data();
-	//cout << "data " << prop_ho.data() << endl;
+	  cout <<"Valid Prop within Bounds" << endl;
+	  cout << "Global Position " << prop_ho.globalPosition() << endl;
+	  cout << "Local Position " << prop_ho.localPosition() << endl;
+	  //const BasicTrajectoryState data = prop_ho.data();
+	  //cout << "data " << prop_ho.data() << endl;
+	  
+	  double prop_ho_eta, prop_ho_phi;
+	  prop_ho_eta = prop_ho.globalPosition().eta();
+	  prop_ho_phi = prop_ho.globalPosition().phi();
+	  
+	  //Propagator_Eta = prop_ho.globalPosition().eta();
+	  //Propagator_Phi = prop_ho.globalPosition().phi();
+	  
+	  //Propagator.eta = prop_ho.globalPosition().eta();
+	  //Propagator.phi = prop_ho.globalPosition().phi();
+	  
+	  int prop_ho_ieta, prop_ho_iphi;
+	  ConvertetaphitoHOietaiphi(prop_ho_eta, prop_ho_phi, prop_ho_ieta, prop_ho_iphi); //Passed by reference
+	  
+	  //Propagator_IsaSiPM = IsaSiPM(prop_ho_ieta, prop_ho_iphi);
+	  //Propagator.IsaSiPM = IsaSiPM(prop_ho_ieta, prop_ho_iphi);
 	
-	double prop_ho_eta, prop_ho_phi;
-	prop_ho_eta = prop_ho.globalPosition().eta();
-	prop_ho_phi = prop_ho.globalPosition().phi();
 	
-	//Propagator_Eta = prop_ho.globalPosition().eta();
-	//Propagator_Phi = prop_ho.globalPosition().phi();
+	  vec_propagator_etas->push_back(prop_ho.globalPosition().eta());
+	  vec_propagator_phis->push_back(prop_ho.globalPosition().phi());
+	  vec_propagator_xs->push_back(prop_ho.globalPosition().x());
+	  vec_propagator_ys->push_back(prop_ho.globalPosition().y());
+	  vec_propagator_zs->push_back(prop_ho.globalPosition().z());
+	  vec_propagator_IsaSiPMs->push_back(IsaSiPM(prop_ho_ieta, prop_ho_iphi));
+	  
+	  cout <<prop_ho.globalPosition().x() << endl;
 	
-	//Propagator.eta = prop_ho.globalPosition().eta();
-	//Propagator.phi = prop_ho.globalPosition().phi();
-	
-	int prop_ho_ieta, prop_ho_iphi;
-	ConvertetaphitoHOietaiphi(prop_ho_eta, prop_ho_phi, prop_ho_ieta, prop_ho_iphi); //Passed by reference
-	
-	//Propagator_IsaSiPM = IsaSiPM(prop_ho_ieta, prop_ho_iphi);
-	//Propagator.IsaSiPM = IsaSiPM(prop_ho_ieta, prop_ho_iphi);
-	
-	
-	vec_propagator_etas->push_back(prop_ho.globalPosition().eta());
-	vec_propagator_phis->push_back(prop_ho.globalPosition().phi());
-	vec_propagator_xs->push_back(prop_ho.globalPosition().x());
-	vec_propagator_ys->push_back(prop_ho.globalPosition().y());
-	vec_propagator_zs->push_back(prop_ho.globalPosition().z());
-	vec_propagator_IsaSiPMs->push_back(IsaSiPM(prop_ho_ieta, prop_ho_iphi));
-	
-	cout <<prop_ho.globalPosition().x() << endl;
-	
-	/*
-	  for(int i = 0; i<4; i++){
-	  prop_rpc[i] = shProp->propagate(initial,*_rpcCyl[i]);
-	  }
-	*/
-	
-	//See how many truth muons go through SiPM sectors after propogation.
-	//First need to convert to ieta and iphi.  
+	  /*
+	    for(int i = 0; i<4; i++){
+	    prop_rpc[i] = shProp->propagate(initial,*_rpcCyl[i]);
+	    }
+	  */
+	  
+	  //See how many truth muons go through SiPM sectors after propogation.
+	  //First need to convert to ieta and iphi.  
+	}
       }
     }
   }
-    /*
-     * Work with the HO_reco
-     */
+
+  /*
+   * Work with the HO_reco
+   */
 
     
   auto bho_reco = hoRecoHits->begin();
@@ -1504,6 +1443,173 @@ double L1TMuonCaloInspector::ConvertEtaToTheta(double eta){
   theta = 2*atan(exp(-1*eta));
 
   return theta;
+}
+
+void L1TMuonCaloInspector::SetHOGeometry(){
+
+  HcalSubdetector subdet = HcalOuter;
+  int ho_depth = 4;
+  for(int eta_cell_index = -15; eta_cell_index <=15; eta_cell_index++){
+    if(eta_cell_index == 0) continue;
+    for(int phi_cell_index = 1; phi_cell_index <=72; phi_cell_index++){
+      HcalDetId cellId =HcalDetId(subdet, eta_cell_index, phi_cell_index, ho_depth); //= DetId(HO 15,72);
+      cout << cellId << endl;
+      cout << caloGeo->getPosition(cellId) << endl;
+      EZArrayFL<GlobalPoint> corners = caloGeo->getGeometry(cellId)->getCorners();
+      //Loop Over Corners
+      for(unsigned int i=0; i < corners.size(); i++){
+	cout << "Corner " << i << ": " << corners[i] << endl;
+      }
+      
+      float halfwidth = 1;
+      float halflength = 1;
+      float halfthickness = 1;
+
+      //Set the  Bounds.  Dimensions of  an inividual cell.
+
+      GlobalPoint pos = caloGeo->getPosition(cellId);
+
+      GlobalVector aZ(0,0,1);  //Always perpendicular to the z-plane
+      GlobalVector aX(1,0,0);
+      TkRotation<float> rot(aPhi, aZ);
+
+      RectangularPlaneBounds * rec_bounds = new RectangularPlaneBounds(halfwidth, halflength, halfthickness);
+      Bounds * bounds = rec_bounds->clone();
+      _hoPlanes[eta_cell_index][phi_cell_index] = Plane::build(pos, rot, bounds);
+    }
+  }
+    
+  
+  
+  
+  //FourPointPlaneBounds * bounds2 = new FourPointPlaneBounds(a,b,c,d);
+  
+  
+  
+  
+  
+  // Build surfaces for extrapolation
+  //Cylinder::PositionType pos0; // mah, we do not use them, but they are
+  //Cylinder::RotationType rot0; // needed in Cylinder constructor
+  
+  //changing to cm
+  
+  //These r values are unconfirmed.
+  /*
+    _rpcCyl[0] = Cylinder::build(400,pos0,rot0);
+    _rpcCyl[1] = Cylinder::build(500,pos0,rot0);
+    _rpcCyl[2] = Cylinder::build(600,pos0,rot0);
+  _rpcCyl[3] = Cylinder::build(700,pos0,rot0);
+  */
+  
+  // _hoCyl = Cylinder::build(412.6,pos0,rot0);
+  
+
+  //Plane::PositionType pos0 = Point3DBase(0,0,412.6);
+  //Plane::RotationType rot0;
+
+  //Bound Plane = new BoundPlane(gp, Surface)
+
+
+  
+  /*
+  double HORMAX = 412.6;
+  
+  for(int i=0; i<12; i++){
+    double HOPHI = i*2*M_PI/12;
+    double HOZ = 0;
+    
+    std::cout << "pos_x: " << HORMAX*cos(HOPHI) << std::endl;
+    std::cout << "pos_y: " << HORMAX*sin(HOPHI) << std::endl;
+    
+    GlobalPoint pos(HORMAX*cos(HOPHI), HORMAX*sin(HOPHI), HOZ);
+    
+    GlobalVector aZ(0,0,1);  //Always perpendicular to the z-plane
+    GlobalVector aPhi(-1*sin(HOPHI),cos(HOPHI),0);
+    TkRotation<float> rot(aPhi, aZ);
+    
+    double ETAMIN = -.3075;
+    double ETAMAX = .3075;
+    
+    double THETAETAMAX = ConvertEtaToTheta(ETAMAX); //Note Increasing Eta, Decreasing Theta
+    double THETAETAMIN = ConvertEtaToTheta(ETAMIN);
+
+    cout <<"Theta of Eta Max: " << THETAETAMAX << " Theta of ETA MIN " << THETAETAMIN << endl;
+    cout << "Tan Theta of Eta Max"<< tan(THETAETAMAX) << " Tan Theta of Eta Min" 
+	 << tan(THETAETAMIN) << endl;
+    
+    
+    float halfwidth = HORMAX*tan((2*M_PI)/12/2);  //float width = 100;
+    float halflength = HORMAX*(1/tan(THETAETAMAX)-1/tan(THETAETAMIN))/2;  //float length = 200;
+    float halfthickness = 0.5;  //float thickness = 300;
+    
+  */
+  
+  /*
+    float nothickness= 0.0;
+    Point3DBase<float,LocalTag> a(halfwidth, halflength,nothickness);
+    Point3DBase<float,LocalTag> b(halfwidth, -1*halflength,nothickness);
+    Point3DBase<float,LocalTag> c(-1*halfwidth, halflength,nothickness);
+    Point3DBase<float,LocalTag> d(halfwidth, -1*halflength,nothickness);
+  */
+  
+  //cout << "width: " << width << " length " << length << " thickness " << thickness << endl;
+  
+  //FourPointPlaneBounds * bounds2 = new FourPointPlaneBounds(a,b,c,d);
+
+  //Set the  Bounds.  Dimensions of  an inividual sector.
+  /*
+  RectangularPlaneBounds * rec_bounds = new RectangularPlaneBounds(halfwidth, halflength, halfthickness);
+  Bounds * bounds = rec_bounds->clone();
+  
+  cout << "width: " << bounds->width() << " length " << bounds->length() 
+       << " thickness " << bounds->thickness() << endl;
+  
+  //GlobalPoint pos(0,0,412.6);
+  
+  //cout <<"Test Eta to Theta" << ConvertEtaToTheta(0.087) << endl;
+  
+  _hoPlanes[i] = Plane::build(pos, rot, bounds);
+  
+  // Test _hoPlane
+  cout << "Test hoPlane" <<i <<":" <<  endl;
+  cout << "Normal Vector" << _hoPlanes[i]->normalVector() << endl;
+  std::pair<float, float> phispan, rspan, zspan; 
+  phispan = _hoPlanes[i]->phiSpan();
+  rspan = _hoPlanes[i]->rSpan();
+  zspan = _hoPlanes[i]->zSpan();
+  cout << "Phi Span" << phispan.first << " and " << phispan.second << endl;
+  cout << "R Span" << rspan.first << " and " << rspan.second << endl;
+  cout << "Z Span" << zspan.first << " and " << zspan.second << endl;
+  */
+  //Point3DBase<float,LocalTag> test_pos(0,0,0);
+  //cout << "Is test position inside bounds " << bool(_hoPlanes[i]->bounds().inside(test_pos)) << endl;
+    
+  //   cout << "Local Z" << hoPlanes[i].normalVector() << endl;
+  //cout << "Bounds" << hoPlanes[i]->bounds() << endl;
+  // hoPlanes[i]->phiSpan();
+  
+  // _hoPlanes[i] = new BoundPlane(pos, Surface::RotationType()); //Thrid parameter is the bound
+  
+  /*
+      _rpcCyl[0] = Cylinder::build(4000,pos0,rot0);
+      _rpcCyl[1] = Cylinder::build(5000,pos0,rot0);
+      _rpcCyl[2] = Cylinder::build(6000,pos0,rot0);
+      _rpcCyl[3] = Cylinder::build(7000,pos0,rot0);
+      
+      _hoCyl = Cylinder::build(3600,pos0,rot0);
+  */
+  }
+
+/*
+HcalSubdetector subdet = HcalOuter;
+int ho_depth = 4;
+  HcalDetId myId =HcalDetId(subdet, 10, 11, ho_depth); //= DetId(HO 15,72);
+//cout << myId << endl;
+//cout << myId.depth() << endl;
+  CaloGeometry caloGeo = CaloGeometry();
+  //cout << caloGeo.getPosition(myId) << endl;
+  */
 }
 
 //define this as a plug-in
