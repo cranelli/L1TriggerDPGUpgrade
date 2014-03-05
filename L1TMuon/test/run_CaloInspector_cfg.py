@@ -2,7 +2,6 @@ import FWCore.ParameterSet.Config as cms
 
 process = cms.Process('TEXTDUMP')
 
- #From Alberto, to include HO_Reco Geometry
 process.load('Configuration.StandardSequences.Services_cff')
 process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
 process.load('FWCore.MessageService.MessageLogger_cfi')
@@ -34,7 +33,7 @@ process.TFileService = cms.Service(
     )
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(1)
+    input = cms.untracked.int32(10000)
         #input = cms.untracked.int32(10000)
     )
 
