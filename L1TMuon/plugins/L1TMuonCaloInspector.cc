@@ -219,7 +219,8 @@ private:
   double WrapCheck(double phi1, double phi2);
   void ConvertetaphitoHOietaiphi(double eta, double phi, int & ieta, int & iphi);
   double ConvertEtaToTheta(double eta);
-  void SetHOGeometry();
+  void SetHOGeometry(edm::ESHandle<CaloGeometry> & caloGeo);
+  Plane::PlanePointer PlaneFromCorners(EZArrayFL<GlobalPoint> & corners);
 
 
   TH1F* _counters;
@@ -476,7 +477,7 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
 
   //Only need to define Propagator Surface Once
   if(_hoPlanes[n_eta][n_phi]==NULL){
-    SetHOGeometry();
+    SetHOGeometry(caloGeo);
   }
   
   /*
@@ -611,58 +612,68 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
 				  &*bField);
     
 
-    
-    for(int i=0; i< 12; i++){
-      TrajectoryStateOnSurface prop_ho = 
-	shProp->propagate(initial,*_hoPlanes[i]);
-      //shProp->propagate(initial,*_hoCyl);
-      //TrajectoryStateOnSurface prop_rpc[4];
-      
-      if(prop_ho.isValid()){
-	//Point3DBase<float,LocalTag> local_point = prop_ho.localPosition();
-	//cout << "local point " << local_point << endl;
-	if(_hoPlanes[i]->bounds().inside(prop_ho.localPosition())){
-	//if(true){
-	  cout <<"Valid Prop within Bounds" << endl;
-	  cout << "Global Position " << prop_ho.globalPosition() << endl;
-	  cout << "Local Position " << prop_ho.localPosition() << endl;
-	  //const BasicTrajectoryState data = prop_ho.data();
-	  //cout << "data " << prop_ho.data() << endl;
-	  
-	  double prop_ho_eta, prop_ho_phi;
-	  prop_ho_eta = prop_ho.globalPosition().eta();
-	  prop_ho_phi = prop_ho.globalPosition().phi();
-	  
-	  //Propagator_Eta = prop_ho.globalPosition().eta();
-	  //Propagator_Phi = prop_ho.globalPosition().phi();
-	  
-	  //Propagator.eta = prop_ho.globalPosition().eta();
-	  //Propagator.phi = prop_ho.globalPosition().phi();
-	  
-	  int prop_ho_ieta, prop_ho_iphi;
-	  ConvertetaphitoHOietaiphi(prop_ho_eta, prop_ho_phi, prop_ho_ieta, prop_ho_iphi); //Passed by reference
-	  
-	  //Propagator_IsaSiPM = IsaSiPM(prop_ho_ieta, prop_ho_iphi);
-	  //Propagator.IsaSiPM = IsaSiPM(prop_ho_ieta, prop_ho_iphi);
+
+    for(int eta_count=0; eta_count< n_eta; eta_count++){
+      for(int phi_count =0; phi_count<n_phi; phi_count++){
+	TrajectoryStateOnSurface prop_ho = 
+	  shProp->propagate(initial,*_hoPlanes[eta_count][phi_count]);
+	//shProp->propagate(initial,*_hoCyl);
+	//TrajectoryStateOnSurface prop_rpc[4];
 	
 	
-	  vec_propagator_etas->push_back(prop_ho.globalPosition().eta());
-	  vec_propagator_phis->push_back(prop_ho.globalPosition().phi());
-	  vec_propagator_xs->push_back(prop_ho.globalPosition().x());
-	  vec_propagator_ys->push_back(prop_ho.globalPosition().y());
-	  vec_propagator_zs->push_back(prop_ho.globalPosition().z());
-	  vec_propagator_IsaSiPMs->push_back(IsaSiPM(prop_ho_ieta, prop_ho_iphi));
+
+	if(prop_ho.isValid()){
+
+	  //cout << "For valid propagated particle" << endl;
+	  //cout << "Global Position " << prop_ho.globalPosition() << endl;
+	  //cout << "Local Position " << prop_ho.localPosition() << endl;
 	  
-	  cout <<prop_ho.globalPosition().x() << endl;
+	  //Point3DBase<float,LocalTag> local_point = prop_ho.localPosition();
+	  //cout << "local point " << local_point << endl;
+	  
+	  if(_hoPlanes[eta_count][phi_count]->bounds().inside(prop_ho.localPosition())){
+	    //if(true){
+	    //cout <<"Valid Prop within Bounds" << endl;
+	    //cout << "Global Position " << prop_ho.globalPosition() << endl;
+	    //cout << "Local Position " << prop_ho.localPosition() << endl;
+	    //const BasicTrajectoryState data = prop_ho.data();
+	    //cout << "data " << prop_ho.data() << endl;
+	    
+	    double prop_ho_eta, prop_ho_phi;
+	    prop_ho_eta = prop_ho.globalPosition().eta();
+	    prop_ho_phi = prop_ho.globalPosition().phi();
+	    
+	    //Propagator_Eta = prop_ho.globalPosition().eta();
+	    //Propagator_Phi = prop_ho.globalPosition().phi();
+	    
+	    //Propagator.eta = prop_ho.globalPosition().eta();
+	    //Propagator.phi = prop_ho.globalPosition().phi();
+	    
+	    int prop_ho_ieta, prop_ho_iphi;
+	    ConvertetaphitoHOietaiphi(prop_ho_eta, prop_ho_phi, prop_ho_ieta, prop_ho_iphi); //Passed by reference
+	  
+	    //Propagator_IsaSiPM = IsaSiPM(prop_ho_ieta, prop_ho_iphi);
+	    //Propagator.IsaSiPM = IsaSiPM(prop_ho_ieta, prop_ho_iphi);
 	
-	  /*
-	    for(int i = 0; i<4; i++){
-	    prop_rpc[i] = shProp->propagate(initial,*_rpcCyl[i]);
-	    }
-	  */
+	    
+	    vec_propagator_etas->push_back(prop_ho.globalPosition().eta());
+	    vec_propagator_phis->push_back(prop_ho.globalPosition().phi());
+	    vec_propagator_xs->push_back(prop_ho.globalPosition().x());
+	    vec_propagator_ys->push_back(prop_ho.globalPosition().y());
+	    vec_propagator_zs->push_back(prop_ho.globalPosition().z());
+	    vec_propagator_IsaSiPMs->push_back(IsaSiPM(prop_ho_ieta, prop_ho_iphi));
+	    
+	    //cout <<prop_ho.globalPosition().x() << endl;
 	  
-	  //See how many truth muons go through SiPM sectors after propogation.
-	  //First need to convert to ieta and iphi.  
+	    /*
+	      for(int i = 0; i<4; i++){
+	      prop_rpc[i] = shProp->propagate(initial,*_rpcCyl[i]);
+	      }
+	    */
+	    
+	    //See how many truth muons go through SiPM sectors after propogation.
+	    //First need to convert to ieta and iphi.  
+	  }
 	}
       }
     }
@@ -1445,38 +1456,48 @@ double L1TMuonCaloInspector::ConvertEtaToTheta(double eta){
   return theta;
 }
 
-void L1TMuonCaloInspector::SetHOGeometry(){
+void L1TMuonCaloInspector::SetHOGeometry(edm::ESHandle<CaloGeometry> & caloGeo){
 
   HcalSubdetector subdet = HcalOuter;
   int ho_depth = 4;
+  int eta_count =0;
   for(int eta_cell_index = -15; eta_cell_index <=15; eta_cell_index++){
     if(eta_cell_index == 0) continue;
+    int phi_count =0;
     for(int phi_cell_index = 1; phi_cell_index <=72; phi_cell_index++){
       HcalDetId cellId =HcalDetId(subdet, eta_cell_index, phi_cell_index, ho_depth); //= DetId(HO 15,72);
-      cout << cellId << endl;
-      cout << caloGeo->getPosition(cellId) << endl;
+      //cout << cellId << endl;
+      //cout << caloGeo->getPosition(cellId) << endl;
       EZArrayFL<GlobalPoint> corners = caloGeo->getGeometry(cellId)->getCorners();
       //Loop Over Corners
-      for(unsigned int i=0; i < corners.size(); i++){
-	cout << "Corner " << i << ": " << corners[i] << endl;
-      }
+      //for(unsigned int i=0; i < corners.size(); i++){
+      //cout << "Corner " << i << ": " << corners[i] << endl;
+      //}
       
-      float halfwidth = 1;
-      float halflength = 1;
-      float halfthickness = 1;
+      //float halfwidth = 1;
+      //float halflength = 1;
+      //float halfthickness = 1;
 
       //Set the  Bounds.  Dimensions of  an inividual cell.
 
-      GlobalPoint pos = caloGeo->getPosition(cellId);
+      //GlobalPoint pos = caloGeo->getPosition(cellId);
 
-      GlobalVector aZ(0,0,1);  //Always perpendicular to the z-plane
-      GlobalVector aX(1,0,0);
-      TkRotation<float> rot(aPhi, aZ);
+      //TkRotation<float> rot = RotFromCorners(corners);
 
-      RectangularPlaneBounds * rec_bounds = new RectangularPlaneBounds(halfwidth, halflength, halfthickness);
-      Bounds * bounds = rec_bounds->clone();
-      _hoPlanes[eta_cell_index][phi_cell_index] = Plane::build(pos, rot, bounds);
+      //RectangularPlaneBounds * rec_bounds = new RectangularPlaneBounds(halfwidth, halflength, halfthickness);
+      //Bounds * bounds = rec_bounds->clone();
+      
+      //Should be the entrance plane
+
+      
+      _hoPlanes[eta_count][phi_count] = PlaneFromCorners(corners);
+
+      //Print Out Normal Vector
+      //cout << "Normal Vector: " << _hoPlanes[eta_count][phi_count]->normalVector()<< endl;
+      //Could also build an exit plane
+      phi_count++;
     }
+    eta_count++;
   }
     
   
@@ -1598,8 +1619,8 @@ void L1TMuonCaloInspector::SetHOGeometry(){
       _rpcCyl[3] = Cylinder::build(7000,pos0,rot0);
       
       _hoCyl = Cylinder::build(3600,pos0,rot0);
+      }
   */
-  }
 
 /*
 HcalSubdetector subdet = HcalOuter;
@@ -1610,6 +1631,96 @@ int ho_depth = 4;
   CaloGeometry caloGeo = CaloGeometry();
   //cout << caloGeo.getPosition(myId) << endl;
   */
+}
+
+/*
+ * Function to calculate rotation vector to an HO tile, using its corners.
+ */
+
+
+Plane::PlanePointer L1TMuonCaloInspector::PlaneFromCorners(EZArrayFL<GlobalPoint> & corners){
+
+  //Basic3DVector<float> aX(0,0,1);  //Always perpendicular to the z-plane
+  //Basic3DVector<float> aY(1,0,0);
+
+
+  // Find the Position
+  
+  //  GlobalPoint pos = caloGeo->getPosition(cellId);
+
+  //Takes the middle of the diagonal of the suface of interest.
+
+  GlobalPoint pos(0.5*(corners[0].x() + corners[2].x()), 
+		  0.5*(corners[0].y() + corners[2].y()), 
+		  0.5*(corners[0].z() + corners[2].z()));
+
+
+  // Find the Rotation
+  
+
+  Basic3DVector<float> aX(corners[0].x() - corners[1].x(), 
+			  corners[0].y() - corners[1].y(), 
+			  corners[0].z() - corners[1].z());
+
+  Basic3DVector<float> aY(corners[1].x() - corners[2].x(), 
+			  corners[1].y() - corners[2].y(), 
+			  corners[1].z() - corners[2].z());
+
+
+  //cout << "aX: " << aX << endl;
+  //cout << "aY: " << aY << endl;
+
+  TkRotation<float> rot(aX, aY);
+
+  //cout << "Rotation: " << rot << endl;
+
+
+  //Set the  Bounds.  Dimensions of  an inividual cell.
+  float width = (corners[0]-corners[1]).mag();  //Finds the vector magnitude
+  float length = (corners[1]-corners[2]).mag();
+  float thickness = 1.0;  //Thickness for the HO Tiles.
+  //cout << "Tile width: " << width << endl;
+  //cout << "Tile length: " << length << endl;
+  //cout << "Tile thickness " << thickness << endl;
+  
+  RectangularPlaneBounds * rec_bounds = new RectangularPlaneBounds(width/2, 
+								   length/2, thickness/2); //Input is halves
+  
+  //Need to Use Local Points
+  
+  // LocalPoint BoundaryPoint[4];
+  //for(int i =0; i< 4; i++){
+  //LocalPoint point(corners[i].x() - pos.x(), 
+  //corners[i].y() - pos.y(), 
+  //		corners[i].z() - pos.z());
+    //cout << "Boundary Point: " << point << endl;
+    //BoundaryPoint[i] = point;
+    
+  //}
+  
+  //FourPointPlaneBounds * four_point_bounds = new FourPointPlaneBounds(BoundaryPoint[0],BoundaryPoint[1],
+  //								      BoundaryPoint[2],BoundaryPoint[3]);
+  
+  //Bounds * bounds = four_point_bounds->clone();
+  Bounds * bounds = rec_bounds->clone();
+	  
+  Plane::PlanePointer plane = Plane::build(pos,rot, bounds);
+
+  /*
+   *Check if the Plane is properly defined
+   */
+
+  //Zero Local Point
+  LocalPoint zero_point(0,0,0);
+  //cout << "Zero_Point Bounds Check" << plane->bounds().inside(zero_point) << endl;
+    
+  //  for(int i =0; i<4; i++){
+  //  cout << "Corner " << i << " is inside bounds: " << plane->bounds().inside(corners[i]) << endl;
+  //}
+
+  return plane;
+  //return Plane::build(pos, rot, bounds);
+
 }
 
 //define this as a plug-in
