@@ -157,10 +157,7 @@ private:
   edm::InputTag _hcalToStdMu;
   edm::InputTag _dttfToStdMu; // or global: can't be too different
 
-  // map with histograms: all deltaEta and deltaPhi plots will
-  // have same boundaries (very generous), then work out useful
-  // ranges with plotting macro
-  
+  /*
   std::map<std::string,TH1F*> _h1Eta;
   std::map<std::string,TH1F*> _h1Phi;
   std::map<std::string,TH1F*> _h1Pt;
@@ -182,15 +179,12 @@ private:
 
   std::map<std::string,TH1F*> _h1Energy;
   std::map<std::string,TH2F*> _h2dDeltaPhiPt;
-
+  */
 
   //TTree Variables
 
   TTree *ho_muon_tree;
-  //  Float_t Generator_Phi, Generator_Eta, Generator_Pt;
-  //Float_t Propagator_Phi, Propagator_Eta;
-  //bool Propagator_IsaSiPM;
-  
+    
   //Generated particles are placed in a vector.
 
   std::vector<int> *vec_generator_pdgId;
@@ -216,10 +210,7 @@ private:
   std::vector<bool> * vec_prop_ho_back_IsaSiPMs;
 
   std::vector<bool> * vec_prop_ho_frontbacksame;
-
-  //Propagated particles are placed in a vector.
-
-  
+    
   //Triggers are placed in a vector
   std::vector<Float_t> *vec_trigger_etas;
   std::vector<Float_t> *vec_trigger_phis;
@@ -262,32 +253,6 @@ private:
   // ----------member data ---------------------------
 };
 
-
-/*
- * HO Event Class, to organize data relevant to the HO Muon analysis, and store
- * it in a root Tree.
- */
-
-/*
-class HOEvent {
-private: 
-  Double_t Generator_Phi, Generator_Eta, Generator_Pt;
-public:
-  //Constructor
-  HOEvent();
-  //Set Members
-  void setGenerators(Double_t phi, Double_t eta, Double_t pt){
-    Generator_Phi = phi;
-    Generator_Eta = eta;
-    Generator_Pt = pt;
-  }
-
-  //Access Members
-  Double_t getGenerator_Phi(){ return Generator_Phi;}
-  Double_t getGenerator_Eta(){ return Generator_Eta;}
-  Double_t getGenerator_Pt(){return Generator_Pt;}
-};
-*/
 
 //
 // constants, enums and typedefs
