@@ -655,8 +655,8 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
 	  shProp->propagate(initial,*hoTilesFront[eta_count][phi_count]);
 	
 		
-	TrajectoryStateOnSurface prop_ho_back = prop_ho_front;
-	//shProp->propagate(initial,*hoTilesBack[eta_count][phi_count]);
+	TrajectoryStateOnSurface prop_ho_back = 
+	  shProp->propagate(initial,*hoTilesBack[eta_count][phi_count]);
 
 	//shProp->propagate(initial,*_hoCyl);
 	//TrajectoryStateOnSurface prop_rpc[4];
