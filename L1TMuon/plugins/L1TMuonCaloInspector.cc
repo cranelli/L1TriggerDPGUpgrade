@@ -133,9 +133,11 @@ private:
   edm::ESHandle<CaloTPGTranscoder> _caloDecoder;
 
   // Surfaces to be used for extrapolation
-  //Cylinder::CylinderPointer _rpcCyl[4]; // 4 = number of stations
+  //Cylinder::CylinderPointer _rpcCyl[4]; // 4 = number of stations 
   //Cylinder::CylinderPointer _hoCyl;
-  Plane::PlanePointer _hoPlanes[n_eta][n_phi];
+  Plane::PlanePointer hoTilesFront[n_eta][n_phi];
+  Plane::PlanePointer hoTilesBack[n_eta][n_phi];
+  bool IsHOGeometrySet=false;
 
   bool _doGen;
   edm::InputTag _genInput;
@@ -197,14 +199,23 @@ private:
   std::vector<Float_t> * vec_generator_pts;
   
   //Propagated particles are placed in a vector
+  //corresponding to the surface they were propagated to
   
-  std::vector<Float_t> * vec_propagator_etas;
-  std::vector<Float_t> * vec_propagator_phis;
-  std::vector<Float_t> * vec_propagator_xs;
-  std::vector<Float_t> * vec_propagator_ys;
-  std::vector<Float_t> * vec_propagator_zs;
+  std::vector<Float_t> * vec_prop_ho_front_etas;
+  std::vector<Float_t> * vec_prop_ho_front_phis;
+  std::vector<Float_t> * vec_prop_ho_front_xs;
+  std::vector<Float_t> * vec_prop_ho_front_ys;
+  std::vector<Float_t> * vec_prop_ho_front_zs;
+  std::vector<bool> * vec_prop_ho_front_IsaSiPMs;
 
-  std::vector<bool> * vec_propagator_IsaSiPMs;
+  std::vector<Float_t> * vec_prop_ho_back_etas;
+  std::vector<Float_t> * vec_prop_ho_back_phis;
+  std::vector<Float_t> * vec_prop_ho_back_xs;
+  std::vector<Float_t> * vec_prop_ho_back_ys;
+  std::vector<Float_t> * vec_prop_ho_back_zs;
+  std::vector<bool> * vec_prop_ho_back_IsaSiPMs;
+
+  std::vector<bool> * vec_prop_ho_frontbacksame;
 
   //Propagated particles are placed in a vector.
 
@@ -215,12 +226,12 @@ private:
   std::vector<Float_t> *vec_trigger_energies;
   std::vector<bool> *vec_trigger_IsaSiPMs;
 
-  bool IsaSiPM(int ieta, int iphi);
+  bool IsaSiPM(double eta, double phi);
   double WrapCheck(double phi1, double phi2);
   void ConvertetaphitoHOietaiphi(double eta, double phi, int & ieta, int & iphi);
   double ConvertEtaToTheta(double eta);
   void SetHOGeometry(edm::ESHandle<CaloGeometry> & caloGeo);
-  Plane::PlanePointer PlaneFromCorners(EZArrayFL<GlobalPoint> & corners);
+  Plane::PlanePointer PlaneFromCorners(GlobalPoint corners[]);
 
 
   TH1F* _counters;
@@ -324,15 +335,23 @@ L1TMuonCaloInspector::L1TMuonCaloInspector(const edm::ParameterSet& iConfig){
   ho_muon_tree->Branch("Generator_Phis", "std::vector<Float_t>",&vec_generator_phis);
   ho_muon_tree->Branch("Generator_Pts", "std::vector<Float_t>",&vec_generator_pts);
 
-  ho_muon_tree->Branch("Propagator_Etas", "std::vector<Float_t>",&vec_propagator_etas);
-  ho_muon_tree->Branch("Propagator_Phis", "std::vector<Float_t>",&vec_propagator_phis);
-  ho_muon_tree->Branch("Propagator_Xs", "std::vector<Float_t>",&vec_propagator_xs);
-  ho_muon_tree->Branch("Propagator_Ys", "std::vector<Float_t>",&vec_propagator_ys);
-  ho_muon_tree->Branch("Propagator_Zs", "std::vector<Float_t>",&vec_propagator_zs);
 
- 
+  ho_muon_tree->Branch("Prop_HO_Front_Etas", "std::vector<Float_t>",&vec_prop_ho_front_etas);
+  ho_muon_tree->Branch("Prop_HO_Front_Phis", "std::vector<Float_t>",&vec_prop_ho_front_phis);
+  ho_muon_tree->Branch("Prop_HO_Front_Xs", "std::vector<Float_t>",&vec_prop_ho_front_xs);
+  ho_muon_tree->Branch("Prop_HO_Front_Ys", "std::vector<Float_t>",&vec_prop_ho_front_ys);
+  ho_muon_tree->Branch("Prop_HO_Front_Zs", "std::vector<Float_t>",&vec_prop_ho_front_zs);
+  ho_muon_tree->Branch("Prop_HO_Front_IsaSiPMs", "std::vector<bool>",&vec_prop_ho_front_IsaSiPMs);
 
- ho_muon_tree->Branch("Propagator_IsaSiPMs", "std::vector<bool>",&vec_propagator_IsaSiPMs);
+  ho_muon_tree->Branch("Prop_HO_Back_Etas", "std::vector<Float_t>",&vec_prop_ho_back_etas);
+  ho_muon_tree->Branch("Prop_HO_Back_Phis", "std::vector<Float_t>",&vec_prop_ho_back_phis);
+  ho_muon_tree->Branch("Prop_HO_Back_Xs", "std::vector<Float_t>",&vec_prop_ho_back_xs);
+  ho_muon_tree->Branch("Prop_HO_Back_Ys", "std::vector<Float_t>",&vec_prop_ho_back_ys);
+  ho_muon_tree->Branch("Prop_HO_Back_Zs", "std::vector<Float_t>",&vec_prop_ho_back_zs);
+  ho_muon_tree->Branch("Prop_HO_Back_IsaSiPMs", "std::vector<bool>",&vec_prop_ho_back_IsaSiPMs);
+  
+  ho_muon_tree->Branch("Prop_HO_FrontBackSame", "std::vector<bool>",&vec_prop_ho_frontbacksame);
+
 
   ho_muon_tree->Branch("Trigger_Etas", "std::vector<Float_t>",&vec_trigger_etas);
   ho_muon_tree->Branch("Trigger_Phis", "std::vector<Float_t>",&vec_trigger_phis);
@@ -445,12 +464,19 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
   vec_generator_etas =0; 
   vec_generator_phis =0;
   vec_generator_pts =0;
-  vec_propagator_etas =0; 
-  vec_propagator_phis =0;
-  vec_propagator_xs =0; 
-  vec_propagator_ys =0;
-  vec_propagator_zs =0;
-  vec_propagator_IsaSiPMs=0;
+  vec_prop_ho_front_etas =0; 
+  vec_prop_ho_front_phis =0;
+  vec_prop_ho_front_xs =0; 
+  vec_prop_ho_front_ys =0;
+  vec_prop_ho_front_zs =0;
+  vec_prop_ho_front_IsaSiPMs=0;
+  vec_prop_ho_back_etas =0; 
+  vec_prop_ho_back_phis =0;
+  vec_prop_ho_back_xs =0; 
+  vec_prop_ho_back_ys =0;
+  vec_prop_ho_back_zs =0;
+  vec_prop_ho_back_IsaSiPMs=0;
+  vec_prop_ho_frontbacksame=0;
   vec_trigger_etas = 0;
   vec_trigger_phis = 0;
   vec_trigger_energies = 0;
@@ -460,12 +486,19 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
   delete vec_generator_etas; vec_generator_etas = new std::vector<Float_t>();
   delete vec_generator_phis; vec_generator_phis = new std::vector<Float_t>();
   delete vec_generator_pts; vec_generator_pts = new std::vector<Float_t>();
-  delete vec_propagator_etas; vec_propagator_etas = new std::vector<Float_t>();
-  delete vec_propagator_phis; vec_propagator_phis = new std::vector<Float_t>();
-  delete vec_propagator_xs; vec_propagator_xs = new std::vector<Float_t>();
-  delete vec_propagator_ys; vec_propagator_ys = new std::vector<Float_t>();
-  delete vec_propagator_zs; vec_propagator_zs = new std::vector<Float_t>();
-  delete vec_propagator_IsaSiPMs; vec_propagator_IsaSiPMs = new std::vector<bool>();
+  delete vec_prop_ho_front_etas; vec_prop_ho_front_etas = new std::vector<Float_t>();
+  delete vec_prop_ho_front_phis; vec_prop_ho_front_phis = new std::vector<Float_t>();
+  delete vec_prop_ho_front_xs; vec_prop_ho_front_xs = new std::vector<Float_t>();
+  delete vec_prop_ho_front_ys; vec_prop_ho_front_ys = new std::vector<Float_t>();
+  delete vec_prop_ho_front_zs; vec_prop_ho_front_zs = new std::vector<Float_t>();
+  delete vec_prop_ho_front_IsaSiPMs; vec_prop_ho_front_IsaSiPMs = new std::vector<bool>();
+  delete vec_prop_ho_back_etas; vec_prop_ho_back_etas = new std::vector<Float_t>();
+  delete vec_prop_ho_back_phis; vec_prop_ho_back_phis = new std::vector<Float_t>();
+  delete vec_prop_ho_back_xs; vec_prop_ho_back_xs = new std::vector<Float_t>();
+  delete vec_prop_ho_back_ys; vec_prop_ho_back_ys = new std::vector<Float_t>();
+  delete vec_prop_ho_back_zs; vec_prop_ho_back_zs = new std::vector<Float_t>();
+  delete vec_prop_ho_back_IsaSiPMs; vec_prop_ho_back_IsaSiPMs = new std::vector<bool>();
+  delete vec_prop_ho_frontbacksame; vec_prop_ho_frontbacksame = new std::vector<bool>();
 
 
   iEvent.getByLabel(_genInput,truthParticles);
@@ -476,10 +509,12 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
   
 
   //Only need to define Propagator Surface Once
-  if(_hoPlanes[n_eta][n_phi]==NULL){
+  if(!IsHOGeometrySet){
     SetHOGeometry(caloGeo);
-  }
-  
+    //cout << "Set HO Geometry" << endl;
+    IsHOGeometrySet=true;
+  }  
+
   /*
   //auto bho_reco_det = hoRecoHits->begin();
   //auto eho_reco_det = hoRecoHits->end();
@@ -612,56 +647,61 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
 				  &*bField);
     
 
-
     for(int eta_count=0; eta_count< n_eta; eta_count++){
       for(int phi_count =0; phi_count<n_phi; phi_count++){
-	TrajectoryStateOnSurface prop_ho = 
-	  shProp->propagate(initial,*_hoPlanes[eta_count][phi_count]);
+	
+	
+	TrajectoryStateOnSurface prop_ho_front = 
+	  shProp->propagate(initial,*hoTilesFront[eta_count][phi_count]);
+	
+		
+	TrajectoryStateOnSurface prop_ho_back = prop_ho_front;
+	//shProp->propagate(initial,*hoTilesBack[eta_count][phi_count]);
+
 	//shProp->propagate(initial,*_hoCyl);
 	//TrajectoryStateOnSurface prop_rpc[4];
-	
-	
-
-	if(prop_ho.isValid()){
-
-	  //cout << "For valid propagated particle" << endl;
-	  //cout << "Global Position " << prop_ho.globalPosition() << endl;
-	  //cout << "Local Position " << prop_ho.localPosition() << endl;
 	  
-	  //Point3DBase<float,LocalTag> local_point = prop_ho.localPosition();
-	  //cout << "local point " << local_point << endl;
-	  
-	  if(_hoPlanes[eta_count][phi_count]->bounds().inside(prop_ho.localPosition())){
-	    //if(true){
-	    //cout <<"Valid Prop within Bounds" << endl;
+
+	if(prop_ho_front.isValid()){
+
+	    //cout << "For valid propagated particle" << endl;
 	    //cout << "Global Position " << prop_ho.globalPosition() << endl;
 	    //cout << "Local Position " << prop_ho.localPosition() << endl;
-	    //const BasicTrajectoryState data = prop_ho.data();
-	    //cout << "data " << prop_ho.data() << endl;
 	    
-	    double prop_ho_eta, prop_ho_phi;
-	    prop_ho_eta = prop_ho.globalPosition().eta();
-	    prop_ho_phi = prop_ho.globalPosition().phi();
-	    
-	    //Propagator_Eta = prop_ho.globalPosition().eta();
-	    //Propagator_Phi = prop_ho.globalPosition().phi();
-	    
-	    //Propagator.eta = prop_ho.globalPosition().eta();
-	    //Propagator.phi = prop_ho.globalPosition().phi();
-	    
-	    int prop_ho_ieta, prop_ho_iphi;
-	    ConvertetaphitoHOietaiphi(prop_ho_eta, prop_ho_phi, prop_ho_ieta, prop_ho_iphi); //Passed by reference
+	    //Point3DBase<float,LocalTag> local_point = prop_ho_front.localPosition();
+	    //cout << "local point " << local_point << endl;
 	  
-	    //Propagator_IsaSiPM = IsaSiPM(prop_ho_ieta, prop_ho_iphi);
-	    //Propagator.IsaSiPM = IsaSiPM(prop_ho_ieta, prop_ho_iphi);
-	
+	  if(hoTilesFront[eta_count][phi_count]->bounds().inside(prop_ho_front.localPosition())){
+	    //if(true){
+	    //cout <<"Valid Prop within Bounds" << endl;
+	    //cout << "Global Position " << prop_ho_front.globalPosition() << endl;
+	    //cout << "Local Position " << prop_ho_front.localPosition() << endl;
+	    //const BasicTrajectoryState data = prop_ho_front.data();
+	    //cout << "data " << prop_ho_front.data() << endl;
 	    
-	    vec_propagator_etas->push_back(prop_ho.globalPosition().eta());
-	    vec_propagator_phis->push_back(prop_ho.globalPosition().phi());
-	    vec_propagator_xs->push_back(prop_ho.globalPosition().x());
-	    vec_propagator_ys->push_back(prop_ho.globalPosition().y());
-	    vec_propagator_zs->push_back(prop_ho.globalPosition().z());
-	    vec_propagator_IsaSiPMs->push_back(IsaSiPM(prop_ho_ieta, prop_ho_iphi));
+	    //double prop_ho_front_eta, prop_ho_front_phi;
+	    //prop_ho_front_eta = prop_ho_front.globalPosition().eta();
+	    //prop_ho_front_phi = prop_ho_front.globalPosition().phi();
+	    
+	    //Propagator_Eta = prop_ho_front.globalPosition().eta();
+	    //Propagator_Phi = prop_ho_front.globalPosition().phi();
+	    
+	    //Propagator.eta = prop_ho_front.globalPosition().eta();
+	    //Propagator.phi = prop_ho_front.globalPosition().phi();
+	    
+	    //int prop_ho_front_ieta, prop_ho_front_iphi;
+	    //ConvertetaphitoHOietaiphi(prop_ho_front.globalPosition().eta(), prop_ho_front.globalPosition().phi(), 
+	    //prop_ho_front_ieta, prop_ho_front_iphi); //Passed by reference
+	    
+	    //Propagator_IsaSiPM = IsaSiPM(prop_ho_front_ieta, prop_ho_front_iphi);
+	    //Propagator.IsaSiPM = IsaSiPM(prop_ho_front_ieta, prop_ho_front_iphi);
+	    
+	    vec_prop_ho_front_etas->push_back(prop_ho_front.globalPosition().eta());
+	    vec_prop_ho_front_phis->push_back(prop_ho_front.globalPosition().phi());
+	    vec_prop_ho_front_xs->push_back(prop_ho_front.globalPosition().x());
+	    vec_prop_ho_front_ys->push_back(prop_ho_front.globalPosition().y());
+	    vec_prop_ho_front_zs->push_back(prop_ho_front.globalPosition().z());
+	    vec_prop_ho_front_IsaSiPMs->push_back(IsaSiPM(prop_ho_front.globalPosition().eta(), prop_ho_front.globalPosition().phi()));
 	    
 	    //cout <<prop_ho.globalPosition().x() << endl;
 	  
@@ -672,12 +712,38 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
 	    */
 	    
 	    //See how many truth muons go through SiPM sectors after propogation.
-	    //First need to convert to ieta and iphi.  
+	    //First need to convert to ieta and iphi. 
+	    
+	  }
+	}
+	
+	if(prop_ho_back.isValid()){
+	  if(hoTilesBack[eta_count][phi_count]->bounds().inside(prop_ho_back.localPosition())){
+ 
+	    vec_prop_ho_back_etas->push_back(prop_ho_back.globalPosition().eta());
+	    vec_prop_ho_back_phis->push_back(prop_ho_back.globalPosition().phi());
+	    vec_prop_ho_back_xs->push_back(prop_ho_back.globalPosition().x());
+	    vec_prop_ho_back_ys->push_back(prop_ho_back.globalPosition().y());
+	    vec_prop_ho_back_zs->push_back(prop_ho_back.globalPosition().z());
+	    vec_prop_ho_front_IsaSiPMs->push_back(IsaSiPM(prop_ho_back.globalPosition().eta(), prop_ho_back.globalPosition().phi()));
+
+	  }
+	}
+	
+	//Check if Particle Enters and Exits through Same HO Tile
+	if(prop_ho_front.isValid() && prop_ho_back.isValid()){
+	  if(hoTilesFront[eta_count][phi_count]->bounds().inside(prop_ho_front.localPosition()) &&
+	     hoTilesBack[eta_count][phi_count]->bounds().inside(prop_ho_back.localPosition())){
+
+	    //Note a single match for the same eta and phi makes true, but a mismatch does not necessarily make false.
+	    vec_prop_ho_frontbacksame->push_back(true);
+	    	  
 	  }
 	}
       }
     }
   }
+
 
   /*
    * Work with the HO_reco
@@ -1331,9 +1397,18 @@ double L1TMuonCaloInspector::WrapCheck(double phi1, double phi2){
 
 // Example of how to pass the HORecHit object
 //bool L1TMuonCaloInspector::IsaSiPM(const HORecHit * bho_rec){
+
+
+/*
+ * Returns true if the  eta, phi position corresponds with a SiPM detector
+ * This is for the 2011-2012 detector design.
+ */
  
-bool L1TMuonCaloInspector::IsaSiPM(int ieta, int iphi){
+bool L1TMuonCaloInspector::IsaSiPM(double eta, double phi){
  
+  int ieta, iphi;
+  ConvertetaphitoHOietaiphi(eta,phi, ieta, iphi); //Passed by reference
+
   //Sectors 9 and 10 in YB1
   //  5 <= ieta <= 10, end of eta range  = ieta * 0.087
   // 47 <= iphi <= 58, end of  phi range  = iphi * 0.087 for iphi <= 36 
@@ -1468,7 +1543,8 @@ void L1TMuonCaloInspector::SetHOGeometry(edm::ESHandle<CaloGeometry> & caloGeo){
       HcalDetId cellId =HcalDetId(subdet, eta_cell_index, phi_cell_index, ho_depth); //= DetId(HO 15,72);
       //cout << cellId << endl;
       //cout << caloGeo->getPosition(cellId) << endl;
-      EZArrayFL<GlobalPoint> corners = caloGeo->getGeometry(cellId)->getCorners();
+      //EZArrayFL<GlobalPoint> eight_corners = caloGeo->getGeometry(cellId)->getCorners();
+      CaloCellGeometry::CornersVec eight_corners = caloGeo->getGeometry(cellId)->getCorners();
       //Loop Over Corners
       //for(unsigned int i=0; i < corners.size(); i++){
       //cout << "Corner " << i << ": " << corners[i] << endl;
@@ -1487,13 +1563,23 @@ void L1TMuonCaloInspector::SetHOGeometry(edm::ESHandle<CaloGeometry> & caloGeo){
       //RectangularPlaneBounds * rec_bounds = new RectangularPlaneBounds(halfwidth, halflength, halfthickness);
       //Bounds * bounds = rec_bounds->clone();
       
-      //Should be the entrance plane
+      //Split the corners between those for the front side and those for the back side. 
 
+      //CaloCellGeometry::CornersVec front_corners, back_corners;
+      GlobalPoint front_corners[4], back_corners[4];
+
+      for(unsigned int i=0; i<4; i++){
+	
+	front_corners[i]=eight_corners[i];
+	back_corners[i] = eight_corners[i+4];
+	
+      }
       
-      _hoPlanes[eta_count][phi_count] = PlaneFromCorners(corners);
+      hoTilesFront[eta_count][phi_count] = PlaneFromCorners(front_corners);  //Entrance Plane
+      hoTilesBack[eta_count][phi_count] = PlaneFromCorners(back_corners);  //Exit Plane
 
       //Print Out Normal Vector
-      //cout << "Normal Vector: " << _hoPlanes[eta_count][phi_count]->normalVector()<< endl;
+      //cout << "Normal Vector: " << hoTilesFront[eta_count][phi_count]->normalVector()<< endl;
       //Could also build an exit plane
       phi_count++;
     }
@@ -1590,27 +1676,27 @@ void L1TMuonCaloInspector::SetHOGeometry(edm::ESHandle<CaloGeometry> & caloGeo){
   
   //cout <<"Test Eta to Theta" << ConvertEtaToTheta(0.087) << endl;
   
-  _hoPlanes[i] = Plane::build(pos, rot, bounds);
+  hoTilesFront[i] = Plane::build(pos, rot, bounds);
   
   // Test _hoPlane
   cout << "Test hoPlane" <<i <<":" <<  endl;
-  cout << "Normal Vector" << _hoPlanes[i]->normalVector() << endl;
+  cout << "Normal Vector" << hoTilesFront[i]->normalVector() << endl;
   std::pair<float, float> phispan, rspan, zspan; 
-  phispan = _hoPlanes[i]->phiSpan();
-  rspan = _hoPlanes[i]->rSpan();
-  zspan = _hoPlanes[i]->zSpan();
+  phispan = hoTilesFront[i]->phiSpan();
+  rspan = hoTilesFront[i]->rSpan();
+  zspan = hoTilesFront[i]->zSpan();
   cout << "Phi Span" << phispan.first << " and " << phispan.second << endl;
   cout << "R Span" << rspan.first << " and " << rspan.second << endl;
   cout << "Z Span" << zspan.first << " and " << zspan.second << endl;
   */
   //Point3DBase<float,LocalTag> test_pos(0,0,0);
-  //cout << "Is test position inside bounds " << bool(_hoPlanes[i]->bounds().inside(test_pos)) << endl;
+  //cout << "Is test position inside bounds " << bool(hoTilesFront[i]->bounds().inside(test_pos)) << endl;
     
   //   cout << "Local Z" << hoPlanes[i].normalVector() << endl;
   //cout << "Bounds" << hoPlanes[i]->bounds() << endl;
   // hoPlanes[i]->phiSpan();
   
-  // _hoPlanes[i] = new BoundPlane(pos, Surface::RotationType()); //Thrid parameter is the bound
+  // hoTilesFront[i] = new BoundPlane(pos, Surface::RotationType()); //Thrid parameter is the bound
   
   /*
       _rpcCyl[0] = Cylinder::build(4000,pos0,rot0);
@@ -1635,10 +1721,11 @@ int ho_depth = 4;
 
 /*
  * Function to calculate rotation vector to an HO tile, using its corners.
+ * There are two cases, the Front Side of the HO Tower or the Back Side.
  */
 
 
-Plane::PlanePointer L1TMuonCaloInspector::PlaneFromCorners(EZArrayFL<GlobalPoint> & corners){
+Plane::PlanePointer L1TMuonCaloInspector::PlaneFromCorners(GlobalPoint corners[]){
 
   //Basic3DVector<float> aX(0,0,1);  //Always perpendicular to the z-plane
   //Basic3DVector<float> aY(1,0,0);
@@ -1647,25 +1734,24 @@ Plane::PlanePointer L1TMuonCaloInspector::PlaneFromCorners(EZArrayFL<GlobalPoint
   // Find the Position
   
   //  GlobalPoint pos = caloGeo->getPosition(cellId);
-
+  
   //Takes the middle of the diagonal of the suface of interest.
-
+  
   GlobalPoint pos(0.5*(corners[0].x() + corners[2].x()), 
 		  0.5*(corners[0].y() + corners[2].y()), 
 		  0.5*(corners[0].z() + corners[2].z()));
 
 
   // Find the Rotation
-  
 
   Basic3DVector<float> aX(corners[0].x() - corners[1].x(), 
 			  corners[0].y() - corners[1].y(), 
 			  corners[0].z() - corners[1].z());
-
+    
   Basic3DVector<float> aY(corners[1].x() - corners[2].x(), 
 			  corners[1].y() - corners[2].y(), 
 			  corners[1].z() - corners[2].z());
-
+  
 
   //cout << "aX: " << aX << endl;
   //cout << "aY: " << aY << endl;
