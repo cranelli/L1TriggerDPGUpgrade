@@ -200,22 +200,22 @@ private:
   std::vector<Float_t> * vec_prop_ho_front_xs;
   std::vector<Float_t> * vec_prop_ho_front_ys;
   std::vector<Float_t> * vec_prop_ho_front_zs;
-  std::vector<bool> * vec_prop_ho_front_IsaSiPMs;
+  //std::vector<bool> * vec_prop_ho_front_IsaSiPMs;
 
   std::vector<Float_t> * vec_prop_ho_back_etas;
   std::vector<Float_t> * vec_prop_ho_back_phis;
   std::vector<Float_t> * vec_prop_ho_back_xs;
   std::vector<Float_t> * vec_prop_ho_back_ys;
   std::vector<Float_t> * vec_prop_ho_back_zs;
-  std::vector<bool> * vec_prop_ho_back_IsaSiPMs;
+  //std::vector<bool> * vec_prop_ho_back_IsaSiPMs;
 
   std::vector<bool> * vec_prop_ho_frontbacksame;
     
-  //Triggers are placed in a vector
-  std::vector<Float_t> *vec_trigger_etas;
-  std::vector<Float_t> *vec_trigger_phis;
-  std::vector<Float_t> *vec_trigger_energies;
-  std::vector<bool> *vec_trigger_IsaSiPMs;
+  //Reconstructed HO events are placed in a vector
+  std::vector<Float_t> *vec_reco_etas;
+  std::vector<Float_t> *vec_reco_phis;
+  std::vector<Float_t> *vec_reco_energies;
+  //std::vector<bool> *vec_reco_IsaSiPMs;
 
   bool IsaSiPM(double eta, double phi);
   double WrapCheck(double phi1, double phi2);
@@ -284,7 +284,7 @@ L1TMuonCaloInspector::L1TMuonCaloInspector(const edm::ParameterSet& iConfig){
   
   _counters = _fileService->make<TH1F>("counter","counters",10,-0.5,9.5);
 
-  ho_muon_tree = _fileService->make<TTree>("ho_muon_tree", "Generator, Propagator, and Trigger Data");
+  ho_muon_tree = _fileService->make<TTree>("ho_muon_tree", "Generator, Propagator, and Reco Data");
 
   /*
   ho_muon_tree->Branch("Generator_Phi", &Generator_Phi, "Generator_Phi/F");
@@ -306,22 +306,22 @@ L1TMuonCaloInspector::L1TMuonCaloInspector(const edm::ParameterSet& iConfig){
   ho_muon_tree->Branch("Prop_HO_Front_Xs", "std::vector<Float_t>",&vec_prop_ho_front_xs);
   ho_muon_tree->Branch("Prop_HO_Front_Ys", "std::vector<Float_t>",&vec_prop_ho_front_ys);
   ho_muon_tree->Branch("Prop_HO_Front_Zs", "std::vector<Float_t>",&vec_prop_ho_front_zs);
-  ho_muon_tree->Branch("Prop_HO_Front_IsaSiPMs", "std::vector<bool>",&vec_prop_ho_front_IsaSiPMs);
+  // ho_muon_tree->Branch("Prop_HO_Front_IsaSiPMs", "std::vector<bool>",&vec_prop_ho_front_IsaSiPMs);
 
   ho_muon_tree->Branch("Prop_HO_Back_Etas", "std::vector<Float_t>",&vec_prop_ho_back_etas);
   ho_muon_tree->Branch("Prop_HO_Back_Phis", "std::vector<Float_t>",&vec_prop_ho_back_phis);
   ho_muon_tree->Branch("Prop_HO_Back_Xs", "std::vector<Float_t>",&vec_prop_ho_back_xs);
   ho_muon_tree->Branch("Prop_HO_Back_Ys", "std::vector<Float_t>",&vec_prop_ho_back_ys);
   ho_muon_tree->Branch("Prop_HO_Back_Zs", "std::vector<Float_t>",&vec_prop_ho_back_zs);
-  ho_muon_tree->Branch("Prop_HO_Back_IsaSiPMs", "std::vector<bool>",&vec_prop_ho_back_IsaSiPMs);
+  //ho_muon_tree->Branch("Prop_HO_Back_IsaSiPMs", "std::vector<bool>",&vec_prop_ho_back_IsaSiPMs);
   
   ho_muon_tree->Branch("Prop_HO_FrontBackSame", "std::vector<bool>",&vec_prop_ho_frontbacksame);
 
 
-  ho_muon_tree->Branch("Trigger_Etas", "std::vector<Float_t>",&vec_trigger_etas);
-  ho_muon_tree->Branch("Trigger_Phis", "std::vector<Float_t>",&vec_trigger_phis);
-  ho_muon_tree->Branch("Trigger_Energies", "std::vector<Float_t>",&vec_trigger_energies);
-  ho_muon_tree->Branch("Trigger_IsaSiPMs", "std::vector<bool>",&vec_trigger_IsaSiPMs);
+  ho_muon_tree->Branch("Reco_Etas", "std::vector<Float_t>",&vec_reco_etas);
+  ho_muon_tree->Branch("Reco_Phis", "std::vector<Float_t>",&vec_reco_phis);
+  ho_muon_tree->Branch("Reco_Energies", "std::vector<Float_t>",&vec_reco_energies);
+  //ho_muon_tree->Branch("Reco_IsaSiPMs", "std::vector<bool>",&vec_reco_IsaSiPMs);
 
 
   //SetHOGeometry();
@@ -434,18 +434,18 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
   vec_prop_ho_front_xs =0; 
   vec_prop_ho_front_ys =0;
   vec_prop_ho_front_zs =0;
-  vec_prop_ho_front_IsaSiPMs=0;
+  //vec_prop_ho_front_IsaSiPMs=0;
   vec_prop_ho_back_etas =0; 
   vec_prop_ho_back_phis =0;
   vec_prop_ho_back_xs =0; 
   vec_prop_ho_back_ys =0;
   vec_prop_ho_back_zs =0;
-  vec_prop_ho_back_IsaSiPMs=0;
+  //vec_prop_ho_back_IsaSiPMs=0;
   vec_prop_ho_frontbacksame=0;
-  vec_trigger_etas = 0;
-  vec_trigger_phis = 0;
-  vec_trigger_energies = 0;
-  vec_trigger_IsaSiPMs = 0;
+  vec_reco_etas = 0;
+  vec_reco_phis = 0;
+  vec_reco_energies = 0;
+  //vec_reco_IsaSiPMs = 0;
     
   delete vec_generator_pdgId; vec_generator_pdgId = new std::vector<int>();
   delete vec_generator_etas; vec_generator_etas = new std::vector<Float_t>();
@@ -456,13 +456,13 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
   delete vec_prop_ho_front_xs; vec_prop_ho_front_xs = new std::vector<Float_t>();
   delete vec_prop_ho_front_ys; vec_prop_ho_front_ys = new std::vector<Float_t>();
   delete vec_prop_ho_front_zs; vec_prop_ho_front_zs = new std::vector<Float_t>();
-  delete vec_prop_ho_front_IsaSiPMs; vec_prop_ho_front_IsaSiPMs = new std::vector<bool>();
+  //delete vec_prop_ho_front_IsaSiPMs; vec_prop_ho_front_IsaSiPMs = new std::vector<bool>();
   delete vec_prop_ho_back_etas; vec_prop_ho_back_etas = new std::vector<Float_t>();
   delete vec_prop_ho_back_phis; vec_prop_ho_back_phis = new std::vector<Float_t>();
   delete vec_prop_ho_back_xs; vec_prop_ho_back_xs = new std::vector<Float_t>();
   delete vec_prop_ho_back_ys; vec_prop_ho_back_ys = new std::vector<Float_t>();
   delete vec_prop_ho_back_zs; vec_prop_ho_back_zs = new std::vector<Float_t>();
-  delete vec_prop_ho_back_IsaSiPMs; vec_prop_ho_back_IsaSiPMs = new std::vector<bool>();
+  //delete vec_prop_ho_back_IsaSiPMs; vec_prop_ho_back_IsaSiPMs = new std::vector<bool>();
   delete vec_prop_ho_frontbacksame; vec_prop_ho_frontbacksame = new std::vector<bool>();
 
 
@@ -479,18 +479,6 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
     //cout << "Set HO Geometry" << endl;
     IsHOGeometrySet=true;
   }  
-
-  /*
-  //auto bho_reco_det = hoRecoHits->begin();
-  //auto eho_reco_det = hoRecoHits->end();
-  //int count =0;
-  // for( ; bho_reco_det != eho_reco_det; ++bho_reco_det ) {
-  //cout <<"Det Id" <<  bho_reco_det->id() << endl;
-  //cout <<"HO Depth" << bho_reco_det->id().depth() << endl;
-  //cout << caloGeo->getPosition(bho_reco_det->id()) << endl;  
-  // count ++
-  */
-
 
 
   auto btruth = truthParticles->cbegin();
@@ -533,31 +521,10 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
     foundTruth = true;
     */
     /*******
-     * Trigger, Propagator, and Generator Data are held together                                                                   
+     * Reco, Propagator, and Generator Data are held together                                                                   
      * in an already created TTree.                                                                                                
      *******/
     
-    /*
-    struct Generator_t{
-      Double_t phi,eta;
-      Double_t pt;
-    };
-    Generator_t Generator;
-    
-    
-    struct Propagator_t{
-      Double_t phi, eta;
-      bool IsaSiPM;
-    };
-    Propagator_t Propagator;
-
-    struct Trigger_t{
-      Double_t phi, eta;
-      Double_t Energy;
-      bool IsaSiPM;
-    };
-    */ 
-
     /*
     ho_muon_tree->Branch("Generator", &Generator.phi, "phi/F:eta:pt");
     ho_muon_tree->Branch("Propagator", &Propagator.phi, "phi/F:eta:IsaSiPM/O");
@@ -577,13 +544,7 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
     vec_generator_phis->push_back(btruth->phi());
     vec_generator_pts->push_back(btruth->pt());
 
-    /*
-    Generator.phi = btruth->phi();
-    Generator.eta = btruth->eta();
-    Generator.pt = btruth->pt();
-    */
-
-    //TTree *ho_muon_tree = new TTree("ho_muon_tree", "Generator, Propagator, and Trigger Data");                                     
+    //TTree *ho_muon_tree = new TTree("ho_muon_tree", "Generator, Propagator, and Reco Data");                                     
     //Generator_Phi = btruth->phi();
     //ho_muon_tree->Branch("Propagator", &Propagator_t->phi, "phi/F:eta")     
 
@@ -666,7 +627,7 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
 	    vec_prop_ho_front_xs->push_back(prop_ho_front.globalPosition().x());
 	    vec_prop_ho_front_ys->push_back(prop_ho_front.globalPosition().y());
 	    vec_prop_ho_front_zs->push_back(prop_ho_front.globalPosition().z());
-	    vec_prop_ho_front_IsaSiPMs->push_back(IsaSiPM(prop_ho_front.globalPosition().eta(), prop_ho_front.globalPosition().phi()));
+	    //vec_prop_ho_front_IsaSiPMs->push_back(IsaSiPM(prop_ho_front.globalPosition().eta(), prop_ho_front.globalPosition().phi()));
 	    
 	    //cout <<prop_ho.globalPosition().x() << endl;
 	  
@@ -690,7 +651,7 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
 	    vec_prop_ho_back_xs->push_back(prop_ho_back.globalPosition().x());
 	    vec_prop_ho_back_ys->push_back(prop_ho_back.globalPosition().y());
 	    vec_prop_ho_back_zs->push_back(prop_ho_back.globalPosition().z());
-	    vec_prop_ho_front_IsaSiPMs->push_back(IsaSiPM(prop_ho_back.globalPosition().eta(), prop_ho_back.globalPosition().phi()));
+	    //vec_prop_ho_front_IsaSiPMs->push_back(IsaSiPM(prop_ho_back.globalPosition().eta(), prop_ho_back.globalPosition().phi()));
 
 	  }
 	}
@@ -720,10 +681,10 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
   
   //std::cout << "Number of HO Reconstructed Hits:"
   //<< hoRecoHits->size() <<" ";
-  delete vec_trigger_etas; vec_trigger_etas = new std::vector<Float_t>();
-  delete vec_trigger_phis; vec_trigger_phis = new std::vector<Float_t>();
-  delete vec_trigger_energies; vec_trigger_energies = new std::vector<Float_t>();
-  delete vec_trigger_IsaSiPMs; vec_trigger_IsaSiPMs = new std::vector<bool>();
+  delete vec_reco_etas; vec_reco_etas = new std::vector<Float_t>();
+  delete vec_reco_phis; vec_reco_phis = new std::vector<Float_t>();
+  delete vec_reco_energies; vec_reco_energies = new std::vector<Float_t>();
+  //delete vec_reco_IsaSiPMs; vec_reco_IsaSiPMs = new std::vector<bool>();
 
   for( ; bho_reco != eho_reco; ++bho_reco ) {
     
@@ -731,16 +692,18 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
     //double ho_recoEta = caloGeo->getPosition(bho_reco->id()).eta();
     //double ho_recox = caloGeo->getPosition(bho_reco->id()).x();
     //double ho_recoy = caloGeo->getPosition(bho_reco->id()).y();
-    int ho_recoieta = bho_reco->id().ieta();
-    int ho_recoiphi = bho_reco->id().iphi();
+    
+    
+    //int ho_recoieta = bho_reco->id().ieta();
+    //int ho_recoiphi = bho_reco->id().iphi();
     
     //cout << ho_recoEta <<":" <<bho_reco->energy() <<" ";
     
     
-    vec_trigger_etas->push_back(caloGeo->getPosition(bho_reco->id()).eta());
-    vec_trigger_phis->push_back(caloGeo->getPosition(bho_reco->id()).phi());
-    vec_trigger_energies->push_back(bho_reco->energy());
-    vec_trigger_IsaSiPMs->push_back(IsaSiPM(ho_recoieta, ho_recoiphi));
+    vec_reco_etas->push_back(caloGeo->getPosition(bho_reco->id()).eta());
+    vec_reco_phis->push_back(caloGeo->getPosition(bho_reco->id()).phi());
+    vec_reco_energies->push_back(bho_reco->energy());
+    //vec_reco_IsaSiPMs->push_back(IsaSiPM(caloGeo->getPosition(bho_reco->id()).eta(), caloGeo->getPosition(bho_reco->id()).phi()));
     
     //vec_triggers->push_back(Trigger);
     
