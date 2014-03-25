@@ -404,6 +404,9 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
   edm::Handle<HORecHitCollection> hoRecoHits;
   iEvent.getByLabel("horeco",hoRecoHits);
 
+  //edm::Handle<JetCollection> jetColl;
+  //iEvent.getByLabel("ak5GenJets",jetColl);
+
   edm::ESHandle<CaloGeometry> caloGeo;
   const CaloGeometryRecord& geoC = iSetup.get<CaloGeometryRecord>();
   geoC.get(caloGeo);

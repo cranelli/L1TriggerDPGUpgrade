@@ -17,7 +17,7 @@ void CalcEff(TTree * T, float del_R, float Threshold);
 */
 
 void HOMuon_Efficiency(const char *file =
-		       "../RootFiles/L1ITMuonSingleMu_14Pt_caloInspector_New.root",
+		       "/home/cranelli/HO_Muon/CMSSW_6_2_0_pre5/src/L1TriggerDPGUpgrade/L1TMuon/test/RootFiles/L1ITMuonSingleMu_14Pt_caloInspector_New.root",
 		       const char* tree_loc = "L1TMuonCaloInsp/ho_muon_tree") {
   TFile* inFile = TFile::Open(file);
   TTree* T = (TTree*)inFile->Get(tree_loc);
