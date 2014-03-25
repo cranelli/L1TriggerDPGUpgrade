@@ -72,7 +72,9 @@ process.FEVTDEBUGoutput = cms.OutputModule("PoolOutputModule",
 # Other statements
 process.genstepfilter.triggerConditions=cms.vstring("generation_step")
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:mc', '')
+process.GlobalTag.globaltag = 'POSTLS170_V3::All'
+
+#process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:mc', '')
 
 process.generator = cms.EDProducer("FlatRandomPtGunProducer",
 	PGunParameters = cms.PSet(
@@ -103,35 +105,36 @@ process.generator = cms.EDProducer("FlatRandomPtGunProducer",
 process.mix.digitizers.hcal.ho.pixels = cms.int32(2500)
 process.mix.digitizers.hcal.ho.siPMCode = 1
 process.mix.digitizers.hcal.ho.photoelectronsToAnalog = cms.vdouble([4.0]*16)
+process.mix.digitizers.hcal.ho.doSiPMSmearing = cms.bool(False)
 
 #turn off HO ZS
 process.hcalRawData.HO = cms.untracked.InputTag("simHcalUnsuppressedDigis", "", "")
 
 #ascii file conditions
-process.hcales_ascii = hcales_ascii = cms.ESSource(
-	"HcalTextCalibrations",
-	input = cms.VPSet(
-	cms.PSet(
-	object = cms.string('ChannelQuality'),
+#process.hcales_ascii = hcales_ascii = cms.ESSource(
+	#"HcalTextCalibrations",
+	#input = cms.VPSet(
+	#cms.PSet(
+	#object = cms.string('ChannelQuality'),
 	
-	file = cms.FileInPath('L1TriggerDPGUpgrade/L1TMuon/data/chan_qual_0.txt')
-	),
-	cms.PSet(
-	object = cms.string('Pedestals'),
-	file = cms.FileInPath('L1TriggerDPGUpgrade/L1TMuon/data/test_pedestals.txt')
-	),
-	cms.PSet(
-	object = cms.string('PedestalWidths'),
-	file = cms.FileInPath('L1TriggerDPGUpgrade/L1TMuon/data/test_pedestalWidths.txt')
-	),
-	cms.PSet(
-	object = cms.string('Gains'),
-	file = cms.FileInPath('L1TriggerDPGUpgrade/L1TMuon/data/test_gains.txt')
-	),
-	)
-	)
+	#file = cms.FileInPath('L1TriggerDPGUpgrade/L1TMuon/data/chan_qual_0.txt')
+	#),
+	#cms.PSet(
+	#object = cms.string('Pedestals'),
+	#file = cms.FileInPath('L1TriggerDPGUpgrade/L1TMuon/data/test_pedestals.txt')
+	#),
+	#cms.PSet(
+	#object = cms.string('PedestalWidths'),
+	#file = cms.FileInPath('L1TriggerDPGUpgrade/L1TMuon/data/test_pedestalWidths.txt')
+	#),
+	#cms.PSet(
+	#object = cms.string('Gains'),
+	#file = cms.FileInPath('L1TriggerDPGUpgrade/L1TMuon/data/test_gains.txt')
+	#),
+	#)
+	#)
 
-process.hcalasciiprefer = cms.ESPrefer("HcalTextCalibrations", "hcales_ascii")
+#process.hcalasciiprefer = cms.ESPrefer("HcalTextCalibrations", "hcales_ascii")
 
 # Path and EndPath definitions
 
