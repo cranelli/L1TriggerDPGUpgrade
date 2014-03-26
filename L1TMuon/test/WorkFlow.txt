@@ -1,0 +1,21 @@
+Christopher Anelli
+
+The Test Directory Stores the configuration files, _cfg.py.
+
+They can be executed with cmsRun.
+
+They should be run in the following order:
+
+particle_gun_gen_sim.py
+run_L1TMuon_cfg.py
+run_CaloInspector_cfg.py
+
+Each output's a root file, and take's the previous one's root
+file as an input.  (So make sure to name them consistently)
+
+
+
+Jobs are sent to condor through HOcheck.jdl.
+
+Where the executable is HOcheck.sh.  
+
