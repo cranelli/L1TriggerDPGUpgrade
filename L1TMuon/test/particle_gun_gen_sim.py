@@ -72,9 +72,8 @@ process.FEVTDEBUGoutput = cms.OutputModule("PoolOutputModule",
 # Other statements
 process.genstepfilter.triggerConditions=cms.vstring("generation_step")
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag.globaltag = 'POSTLS170_V3::All'
-
-#process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:mc', '')
+#process.GlobalTag.globaltag = 'POSTLS170_V3::All'
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:mc', '')
 
 process.generator = cms.EDProducer("FlatRandomPtGunProducer",
 	PGunParameters = cms.PSet(
@@ -135,6 +134,23 @@ process.hcalRawData.HO = cms.untracked.InputTag("simHcalUnsuppressedDigis", "", 
 	#)
 
 #process.hcalasciiprefer = cms.ESPrefer("HcalTextCalibrations", "hcales_ascii")
+
+#process.g4SimHits.HCalSD.TestNumberingScheme = True
+
+#Add a Watcher to g4SimHits
+process.g4SimHits.Watchers = cms.VPSet(cms.PSet(
+	type       = cms.string('MyWatcher'),
+	Verbosity  = cms.int32(1),
+	Names      = cms.vstring('HcalHits','EcalHitsEB', 'EcalHitsEE')
+	))
+
+process.mix.digitizers.hcal.HcalReLabel.RelabelHits = cms.untracked.bool(True)
+process.mix.digitizers.hcal.HcalReLabel.RelabelRules.Eta1  = cms.untracked.vint32(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1)
+process.mix.digitizers.hcal.HcalReLabel.RelabelRules.Eta16 = cms.untracked.vint32(1,1,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3)
+process.mix.digitizers.hcal.HcalReLabel.RelabelRules.Eta17 = cms.untracked.vint32(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1)
+process.mix.digitizers.hcal.HcalReLabel.RelabelRules.Eta18 = cms.untracked.vint32(1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2)
+process.mix.digitizers.hcal.HcalReLabel.RelabelRules.Eta19 = cms.untracked.vint32(1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2)
+process.mix.digitizers.hcal.HcalReLabel.RelabelRules.Eta27 = cms.untracked.vint32(1,1,1,1,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3)
 
 # Path and EndPath definitions
 
