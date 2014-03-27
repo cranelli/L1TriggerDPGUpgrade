@@ -13,9 +13,11 @@ process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
 process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.EventContent.EventContent_cff')
 process.load('SimGeneral.MixingModule.mixNoPU_cfi')
-process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
-process.load('Configuration.StandardSequences.GeometrySimDB_cff')
-process.load('Configuration.StandardSequences.MagneticField_38T_cff')
+#process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
+#process.load('Configuration.StandardSequences.GeometrySimDB_cff')
+process.load('Configuration.Geometry.GeometryExtended2015Reco_cff')
+#process.load('Configuration.StandardSequences.MagneticField_38T_cff')
+process.load('Configuration.StandardSequences.MagneticField_38T_PostLS1_cff')
 process.load('Configuration.StandardSequences.Generator_cff')
 process.load('IOMC.EventVertexGenerators.VtxSmearedRealistic8TeVCollision_cfi')
 process.load('GeneratorInterface.Core.genFilterSummary_cff')
@@ -32,7 +34,7 @@ process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 process.maxEvents = cms.untracked.PSet(
    # input = cms.untracked.Int32(5000)
-    input = cms.untracked.int32(1000)
+    input = cms.untracked.int32(10000)
 )
 
 # Input source
@@ -72,9 +74,8 @@ process.FEVTDEBUGoutput = cms.OutputModule("PoolOutputModule",
 # Other statements
 process.genstepfilter.triggerConditions=cms.vstring("generation_step")
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag.globaltag = 'POSTLS170_V3::All'
-
-#process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:mc', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS1', '')
+#process.GlobalTag = GlobalTag(process.GlobalTag, 'POSTLS170_V3::All','')
 
 process.generator = cms.EDProducer("FlatRandomPtGunProducer",
 	PGunParameters = cms.PSet(
@@ -99,8 +100,6 @@ process.generator = cms.EDProducer("FlatRandomPtGunProducer",
     firstRun = cms.untracked.uint32(1)
 )
 
-#Taken from Jake Anderson's code
-
 # add SiPMs to HO
 process.mix.digitizers.hcal.ho.pixels = cms.int32(2500)
 process.mix.digitizers.hcal.ho.siPMCode = 1
@@ -110,29 +109,31 @@ process.mix.digitizers.hcal.ho.doSiPMSmearing = cms.bool(False)
 #turn off HO ZS
 process.hcalRawData.HO = cms.untracked.InputTag("simHcalUnsuppressedDigis", "", "")
 
+
+#Taken from Jake Anderson's code
 #ascii file conditions
 #process.hcales_ascii = hcales_ascii = cms.ESSource(
-	#"HcalTextCalibrations",
-	#input = cms.VPSet(
-	#cms.PSet(
-	#object = cms.string('ChannelQuality'),
-	
-	#file = cms.FileInPath('L1TriggerDPGUpgrade/L1TMuon/data/chan_qual_0.txt')
-	#),
-	#cms.PSet(
-	#object = cms.string('Pedestals'),
-	#file = cms.FileInPath('L1TriggerDPGUpgrade/L1TMuon/data/test_pedestals.txt')
-	#),
-	#cms.PSet(
-	#object = cms.string('PedestalWidths'),
-	#file = cms.FileInPath('L1TriggerDPGUpgrade/L1TMuon/data/test_pedestalWidths.txt')
-	#),
-	#cms.PSet(
-	#object = cms.string('Gains'),
-	#file = cms.FileInPath('L1TriggerDPGUpgrade/L1TMuon/data/test_gains.txt')
-	#),
-	#)
-	#)
+#	"HcalTextCalibrations",
+#	input = cms.VPSet(
+#	cms.PSet(
+#	object = cms.string('ChannelQuality'),
+#	
+#	file = cms.FileInPath('L1TriggerDPGUpgrade/L1TMuon/data/chan_qual_0.txt')
+#	),
+#	cms.PSet(
+#	object = cms.string('Pedestals'),
+#	file = cms.FileInPath('L1TriggerDPGUpgrade/L1TMuon/data/test_pedestals.txt')
+#	),
+#	cms.PSet(
+#	object = cms.string('PedestalWidths'),
+#	file = cms.FileInPath('L1TriggerDPGUpgrade/L1TMuon/data/test_pedestalWidths.txt')
+#	),
+#	cms.PSet(
+#	object = cms.string('Gains'),
+#	file = cms.FileInPath('L1TriggerDPGUpgrade/L1TMuon/data/test_gains.txt')
+#	),
+#	)
+#	)
 
 #process.hcalasciiprefer = cms.ESPrefer("HcalTextCalibrations", "hcales_ascii")
 
@@ -168,3 +169,18 @@ process.schedule = cms.Schedule(process.generation_step,
 for path in process.paths:
 	getattr(process,path)._seq = process.generator * getattr(process,path)._seq 
 
+
+# customisation of the process From Salavat (For HLT so commented out, but kept for records).
+
+# Automatic addition of the customisation function from HLTrigger.Configuration.customizeHLTforMC
+#from HLTrigger.Configuration.customizeHLTforMC import customizeHLTforMC
+#call to customisation function customizeHLTforMC imported from HLTrigger.Configuration.customizeHLTforMC
+
+#process = customizeHLTforMC(process)
+
+# Automatic addition of the customisation function from SLHCUpgradeSimulations.Configuration.postLS1Customs
+#from SLHCUpgradeSimulations.Configuration.postLS1Customs import customisePostLS1
+#call to customisation function customisePostLS1 imported from SLHCUpgradeSimulations.Configuration.postLS1Customs
+#process = customisePostLS1(process)
+
+# End of customisation functions
