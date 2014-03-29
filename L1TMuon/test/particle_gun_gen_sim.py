@@ -34,7 +34,7 @@ process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 process.maxEvents = cms.untracked.PSet(
    # input = cms.untracked.Int32(5000)
-    input = cms.untracked.int32(10000)
+    input = cms.untracked.int32(1000)
 )
 
 # Input source
@@ -136,6 +136,14 @@ process.hcalRawData.HO = cms.untracked.InputTag("simHcalUnsuppressedDigis", "", 
 #	)
 
 #process.hcalasciiprefer = cms.ESPrefer("HcalTextCalibrations", "hcales_ascii")
+
+# Automatic addition of the customisation function from SLHCUpgradeSimulations.Configuration.postLS1Customs
+from SLHCUpgradeSimulations.Configuration.postLS1Customs import customisePostLS1
+
+#call to customisation function customisePostLS1 imported from SLHCUpgradeSimulations.Configuration.postLS1Customs
+process = customisePostLS1(process)
+
+# End of customisation functions
 
 # Path and EndPath definitions
 
