@@ -32,7 +32,7 @@ process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 process.maxEvents = cms.untracked.PSet(
    # input = cms.untracked.Int32(5000)
-    input = cms.untracked.int32(1000)
+    input = cms.untracked.int32(10)
 )
 
 # Input source
@@ -57,7 +57,7 @@ process.FEVTDEBUGoutput = cms.OutputModule("PoolOutputModule",
     splitLevel = cms.untracked.int32(0),
     eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
     outputCommands = process.FEVTDEBUGEventContent.outputCommands,
-    fileName = cms.untracked.string('SingleMu14Pt_AllSiPM_Barrel_GEN_SIM_DIGI_L1_RECO.root'),
+    fileName = cms.untracked.string('SingleMu14Pt_Watcher_Barrel_GEN_SIM_DIGI_L1_RECO.root'),
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
         dataTier = cms.untracked.string('')
