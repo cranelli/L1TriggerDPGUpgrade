@@ -13,9 +13,11 @@ process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
 process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.EventContent.EventContent_cff')
 process.load('SimGeneral.MixingModule.mixNoPU_cfi')
-process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
-process.load('Configuration.StandardSequences.GeometrySimDB_cff')
-process.load('Configuration.StandardSequences.MagneticField_38T_cff')
+#process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
+#process.load('Configuration.StandardSequences.GeometrySimDB_cff')
+process.load('Configuration.Geometry.GeometryExtended2015Reco_cff')
+#process.load('Configuration.StandardSequences.MagneticField_38T_cff')
+process.load('Configuration.StandardSequences.MagneticField_38T_PostLS1_cff')
 process.load('Configuration.StandardSequences.Generator_cff')
 process.load('IOMC.EventVertexGenerators.VtxSmearedRealistic8TeVCollision_cfi')
 process.load('GeneratorInterface.Core.genFilterSummary_cff')
@@ -32,7 +34,7 @@ process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 process.maxEvents = cms.untracked.PSet(
    # input = cms.untracked.Int32(5000)
-    input = cms.untracked.int32(10)
+    input = cms.untracked.int32(1000)
 )
 
 # Input source
@@ -73,7 +75,8 @@ process.FEVTDEBUGoutput = cms.OutputModule("PoolOutputModule",
 process.genstepfilter.triggerConditions=cms.vstring("generation_step")
 from Configuration.AlCa.GlobalTag import GlobalTag
 #process.GlobalTag.globaltag = 'POSTLS170_V3::All'
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:mc', '')
+#process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:mc', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS1', '')
 
 process.generator = cms.EDProducer("FlatRandomPtGunProducer",
 	PGunParameters = cms.PSet(
@@ -137,6 +140,12 @@ process.hcalRawData.HO = cms.untracked.InputTag("simHcalUnsuppressedDigis", "", 
 
 #process.g4SimHits.HCalSD.TestNumberingScheme = True
 
+# Automatic addition of the customisation function from SLHCUpgradeSimulations.Configuration.postLS1Customs
+from SLHCUpgradeSimulations.Configuration.postLS1Customs import customisePostLS1
+#call to customisation function customisePostLS1 imported from SLHCUpgradeSimulations.Configuration.postLS1Customs
+process = customisePostLS1(process)
+
+
 #Add a Watcher to g4SimHits
 process.g4SimHits.Watchers = cms.VPSet(cms.PSet(
 	type       = cms.string('MyWatcher'),
@@ -184,3 +193,13 @@ process.schedule = cms.Schedule(process.generation_step,
 for path in process.paths:
 	getattr(process,path)._seq = process.generator * getattr(process,path)._seq 
 
+
+# customisation of the process From Salavat (For HLT so commented out, but kept for records).
+
+# Automatic addition of the customisation function from HLTrigger.Configuration.customizeHLTforMC
+#from HLTrigger.Configuration.customizeHLTforMC import customizeHLTforMC
+#call to customisation function customizeHLTforMC imported from HLTrigger.Configuration.customizeHLTforMC
+
+#process = customizeHLTforMC(process)
+
+# End of customisation functions
