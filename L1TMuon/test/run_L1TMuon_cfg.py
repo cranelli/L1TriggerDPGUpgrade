@@ -17,7 +17,7 @@ process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 process.load('L1TriggerDPGUpgrade.L1TMuon.L1TMuon_cff')
 
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, runParameters.CONFIGURATIONGEOMETRY, '')
+process.GlobalTag = GlobalTag(process.GlobalTag, runParameters.GLOBALTAGNAME, '')
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS1', '')
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:mc', '')
 
