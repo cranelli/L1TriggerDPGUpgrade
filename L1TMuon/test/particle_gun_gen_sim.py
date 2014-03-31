@@ -4,6 +4,7 @@
 # Source: /local/reps/CMSSW/CMSSW/Configuration/PyReleaseValidation/python/ConfigBuilder.py,v 
 # with command line options: SingleMuFlatLogPt_100MeVto2TeV_cfi.py -s GEN,SIM,DIGI,L1 --conditions START53_V7A::All --eventcontent FEVTDEBUG --no_exec
 import FWCore.ParameterSet.Config as cms
+import nameRoot
 
 process = cms.Process('L1')
 
@@ -59,7 +60,7 @@ process.FEVTDEBUGoutput = cms.OutputModule("PoolOutputModule",
     splitLevel = cms.untracked.int32(0),
     eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
     outputCommands = process.FEVTDEBUGEventContent.outputCommands,
-    fileName = cms.untracked.string('SingleMu14Pt_Watcher_Barrel_GEN_SIM_DIGI_L1_RECO.root'),
+    fileName = cms.untracked.string('SingleMu14Pt_' +nameRoot.PREFIX + 'Watcher_Barrel_GEN_SIM_DIGI_L1_RECO.root'),
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
         dataTier = cms.untracked.string('')
