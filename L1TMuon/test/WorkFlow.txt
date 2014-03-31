@@ -13,9 +13,12 @@ run_CaloInspector_cfg.py
 Each output's a root file, and take's the previous one's root
 file as an input.  (So make sure to name them consistently)
 
-
+To help in this, I have added runParameters.py
+Which holds the PREFIX common to all the root files names.
+Changing the value of the PREFIX to reflect the current series of tests, 
+changes the names of the root files created.
 
 Jobs are sent to condor through HOcheck.jdl.
-
 Where the executable is HOcheck.sh.  
+condor_submit HOcheck.jdl
 

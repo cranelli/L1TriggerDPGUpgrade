@@ -1,0 +1,4 @@
+#NameRoot.py
+
+PREFIX="PostLS1"
+NUMEVENTS=1000;
