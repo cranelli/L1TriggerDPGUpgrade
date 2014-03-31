@@ -1,4 +1,5 @@
 import FWCore.ParameterSet.Config as cms
+import runParameters
 
 process = cms.Process('L1TMUON')
 
@@ -16,7 +17,7 @@ from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:mc', '')
 
 
-infile = ['file:SingleMu14Pt_AllSiPM_Barrel_GEN_SIM_DIGI_L1_RECO.root']
+infile = ['file:SingleMu14Pt_' +runParameters.PREFIX+'_Barrel_GEN_SIM_DIGI_L1_RECO.root']
 #infile = ['file:/data/users/cranelli/HOL1Muon_Samples/MinBias/mc_summer13_MinBias14TeV_GenSim_UpgrdPhase1Age0START.root']
 #infile = ['file:SingleMu14Pt_AllSiPM_Barrel_GEN_SIM_DIGI_L1_RECO.root']
 #infile = ['file:SingleMuPMFlatPt_FullBarrel_GEN_SIM_DIGI_L1_RECO.root']
@@ -82,7 +83,7 @@ process.FEVTDEBUGoutput = cms.OutputModule(
     splitLevel = cms.untracked.int32(0),
     eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
     outputCommands = outCommands,
-    fileName = cms.untracked.string('L1TMuonSingleMu_14Pt_AllSiPM_Barrel.root'),
+    fileName = cms.untracked.string('L1TMuonSingleMu_14Pt_' + runParameters.PREFIX+ '_Barrel.root'),
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
         dataTier = cms.untracked.string('')

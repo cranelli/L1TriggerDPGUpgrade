@@ -1,4 +1,4 @@
 #NameRoot.py
 
 PREFIX="PostLS1"
-NUMEVENTS=10;
+NUMEVENTS=1000;

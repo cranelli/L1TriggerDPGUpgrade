@@ -1,4 +1,5 @@
 import FWCore.ParameterSet.Config as cms
+import runParameters
 
 process = cms.Process('TEXTDUMP')
 
@@ -29,11 +30,11 @@ process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:mc', '')
 
 process.TFileService = cms.Service(
     "TFileService",
-    fileName=cms.string('L1ITMuonSingleMu_14Pt_FrontBackHO_caloInspector_1000Events_New.root')
+    fileName=cms.string('L1ITMuonSingleMu_14Pt_'+runParameters.PREFIX+'_caloInspector.root')
     )
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(10000)
+    input = cms.untracked.int32(runParameters.NUMEVENTS)
         #input = cms.untracked.int32(10000)
     )
 
@@ -53,7 +54,7 @@ process.L1TMuonCaloInsp = cms.EDAnalyzer(
     dRdttfToStdMu = cms.untracked.double(99.0)  #0.2)
 )
 
-infile = 'file:L1TMuonSingleMu_14Pt_AllSiPM_Barrel.root'
+infile = 'file:L1TMuonSingleMu_14Pt_'+runParameters.PREFIX+'_Barrel.root'
 
 process.source = cms.Source(
     'PoolSource',
