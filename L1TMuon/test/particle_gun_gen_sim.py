@@ -16,7 +16,8 @@ process.load('Configuration.EventContent.EventContent_cff')
 process.load('SimGeneral.MixingModule.mixNoPU_cfi')
 #process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
 #process.load('Configuration.StandardSequences.GeometrySimDB_cff')
-process.load('Configuration.Geometry.GeometryExtended2015Reco_cff')
+#process.load('Configuration.Geometry.GeometryExtended2015Reco_cff')
+process.load(runParameters.CONFIGURATIONGEOMETRY)
 #process.load('Configuration.StandardSequences.MagneticField_38T_cff')
 process.load('Configuration.StandardSequences.MagneticField_38T_PostLS1_cff')
 process.load('Configuration.StandardSequences.Generator_cff')
@@ -75,7 +76,8 @@ process.FEVTDEBUGoutput = cms.OutputModule("PoolOutputModule",
 # Other statements
 process.genstepfilter.triggerConditions=cms.vstring("generation_step")
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS1', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, runParameters.GLOBALTAGNAME, '')
+#process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS1', '')
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'POSTLS170_V3::All','')
 
 process.generator = cms.EDProducer("FlatRandomPtGunProducer",
