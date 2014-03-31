@@ -72,9 +72,10 @@ echo $HOME
 #echo $G4WORKDIR
 #/home/cranelli/geant4/geant4.9.4.p02/x86_64-slc5-gcc43/bin/Linux-g++/fcalor $PARAMETER_SET >> $FINAL_LOG 2>&1
 #cd /home/cranelli/HO_Muon/CMSSW_6_2_0_pre5/src/L1TriggerDPGUpgrade/L1TMuon/test/
-cmsRun particle_gun_gen_sim.py
-cmsRun run_L1TMuon_cfg.py
-cmsRun run_CaloInspector_cfg.py
+#cmsRun particle_gun_gen_sim.py
+#echo "working"
+#cmsRun run_L1TMuon_cfg.py
+#cmsRun run_CaloInspector_cfg.py
 #cmsRun Test_particle_gun_gen_sim.py
 #cmsRun Test_run_L1TMuon_cfg.py
 #cmsRun Test_run_CaloInspector_cfg.py
