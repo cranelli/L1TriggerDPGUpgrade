@@ -1,6 +1,6 @@
 #NameRoot.py
 
-PREFIX="PostLS1"
-NUMEVENTS=1000
+PREFIX="test"
+NUMEVENTS=10
 GLOBALTAGNAME='auto:upgradePLS1'
 CONFIGURATIONGEOMETRY='Configuration.Geometry.GeometryExtended2015Reco_cff'

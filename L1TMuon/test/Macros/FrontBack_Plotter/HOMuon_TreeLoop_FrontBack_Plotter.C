@@ -37,6 +37,9 @@
 
 //Keys (Single Key can refer to multiple histograms)
 
+#define PLOTDIR "/home/cranelli/HO_Muon/CMSSW_7_0_0/src/L1TriggerDPGUpgrade/L1TMuon/test/Plots/"
+#define PLOTSUBDIR "Version_7_0_0_Plots/"
+
 #define all_gen_key "AllGen"
 #define all_reco_key "AllReco"
 #define all_frontprop_key "AllFrontProp"
@@ -252,7 +255,10 @@ void HOMuon_TreeLoop_FrontBack_Plotter::Terminate()
    
   //Loop over the Maps of Histograms, Save and Plot them.
  
-  TFile *outfile= TFile::Open("/home/cranelli/HO_Muon/CMSSW_6_2_0_pre5/src/L1TriggerDPGUpgrade/L1TMuon/test/Plots/FrontBack_Plots/out_FrontBack_14_Muon.root","RECREATE");
+  std::stringstream outfileStream;
+  outfileStream << PLOTDIR << PLOTSUBDIR << "out_FrontBack_14_Muon.root";
+
+    TFile *outfile= TFile::Open(outfileStream.str().c_str(),"RECREATE");
     
   for(it = _h1Energy.begin(); it!=_h1Energy.end(); ++it){
     //cout << it->first << endl;
@@ -477,7 +483,7 @@ void HOMuon_TreeLoop_FrontBack_Plotter::PlotCreator(TH1F * hist, const char * ti
   //hist->Draw("e0,hist");
   
   // std::cout << Form("../Plots/SwitchtoTree_Plots/%s.png",out_name) << std::endl;
-  c->SaveAs(Form("/home/cranelli/HO_Muon/CMSSW_6_2_0_pre5/src/L1TriggerDPGUpgrade/L1TMuon/test/Plots/FrontBack_Plots/%s.png",title));
+  c->SaveAs(Form(PLOTDIR PLOTSUBDIR "%s.png",title));
 }
 
 void HOMuon_TreeLoop_FrontBack_Plotter::PlotCreator2D(TH2F* hist, const char* title, const char* xAxis, const char* yAxis, double xMin, double xMax,double yMin, double yMax,int num_xbinmerge, int num_ybinmerge, const char * type){
@@ -516,7 +522,7 @@ void HOMuon_TreeLoop_FrontBack_Plotter::PlotCreator2D(TH2F* hist, const char* ti
   c->SetFillColor(0);
   c->SetBorderSize(0);
   hist->Draw(type);
-  c->SaveAs(Form("/home/cranelli/HO_Muon/CMSSW_6_2_0_pre5/src/L1TriggerDPGUpgrade/L1TMuon/test/Plots/FrontBack_Plots/%s.png",title));
+  c->SaveAs(Form(PLOTDIR PLOTSUBDIR "%s.png",title));
   //c->Print(Form("p_%s.png",name));
   //c->Print(Form("p_%s.eps",name));
   //c->Print(Form("p_%s.pdf",name));

@@ -15,9 +15,9 @@
 //#include "HOMuon_TreeLoop_FrontBack_Plotter.h"
 
 
-void HOMuon_FrontBack_Plotter(const char *file = 
-			      "/home/cranelli/HO_Muon/CMSSW_6_2_0_pre5/src/L1TriggerDPGUpgrade/L1TMuon/test/RootFiles/L1ITMuonSingleMu_14Pt_FrontBackHO_caloInspector_1000Events_New.root",
-			    	const char* tree_loc = "L1TMuonCaloInsp/ho_muon_tree") {
+void HOMuon_FrontBack_Plotter(const char *file =
+			      "/home/cranelli/HO_Muon/CMSSW_7_0_0/src/L1TriggerDPGUpgrade/L1TMuon/test/RootFiles/L1ITMuonSingleMu_14Pt_PostLS1_caloInspector.root",
+			      const char* tree_loc = "L1TMuonCaloInsp/ho_muon_tree") {
   TFile* inFile = TFile::Open(file);
   //std::cout << inFile << std::endl;
   TTree* T = (TTree*)inFile->Get(tree_loc);
