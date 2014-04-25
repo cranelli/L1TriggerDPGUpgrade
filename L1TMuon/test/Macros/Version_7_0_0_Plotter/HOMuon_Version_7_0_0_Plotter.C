@@ -12,13 +12,31 @@
 #include "TGraph.h"
 #include "iostream"
 #include <vector>
+
 //#include "HOMuon_TreeLoop_FrontBack_Plotter.h"
 
 
-void HOMuon_Version_7_0_0_Plotter(const char *file = 
-			      "/home/cranelli/HO_Muon/CMSSW_7_0_0/src/L1TriggerDPGUpgrade/L1TMuon/test/RootFiles/L1ITMuonSingleMu_14Pt_PostLS1_caloInspector.root",
-			    	const char* tree_loc = "L1TMuonCaloInsp/ho_muon_tree") {
-  TFile* inFile = TFile::Open(file);
+//#define PREFIX="L1TMuonSingleMu_14Pt_PostLS1_caloInspector.root"
+
+//#define TREE_LOC="L1TMuonCaloInsp/ho_muon_tree"
+
+/*
+ *Define (and easy to modify constants)
+ */
+
+const char* prefix = "SingleMu14Pt_PostLS1";
+
+const char* tree_loc="L1TMuonCaloInsp/ho_muon_tree";
+const char* root_path ="/home/cranelli/HO_Muon/CMSSW_7_0_0/src/L1TriggerDPGUpgrade/L1TMuon/test/RootFiles/";
+
+
+void HOMuon_Version_7_0_0_Plotter(){  
+  
+  std::stringstream file;
+  file << root_path << prefix << "_caloInspector.root";
+
+
+  TFile* inFile = TFile::Open(file.str().c_str());
   //std::cout << inFile << std::endl;
   TTree* T = (TTree*)inFile->Get(tree_loc);
   cout<<T << endl;

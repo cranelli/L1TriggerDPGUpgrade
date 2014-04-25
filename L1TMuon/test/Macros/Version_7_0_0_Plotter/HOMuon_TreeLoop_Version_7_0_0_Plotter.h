@@ -2,11 +2,11 @@
 // This class has been automatically generated on
 // Tue Mar 11 14:47:20 2014 by ROOT version 5.34/05
 // from TTree ho_muon_tree/Generator, Propagator, and Reco Data
-// found on file: ../../RootFiles/L1ITMuonSingleMu_14Pt_FrontBackHO_caloInspector_New.root
+// found on file: ../../RootFiles/L1ITMuonSingleMu_14Pt_Version_7_0_0HO_caloInspector_New.root
 //////////////////////////////////////////////////////////
 
-#ifndef HOMuon_TreeLoop_FrontBack_Plotter_h
-#define HOMuon_TreeLoop_FrontBack_Plotter_h
+#ifndef HOMuon_TreeLoop_Version_7_0_0_Plotter_h
+#define HOMuon_TreeLoop_Version_7_0_0_Plotter_h
 
 #include <TROOT.h>
 #include <TChain.h>
@@ -22,7 +22,7 @@
 
 // Fixed size dimensions of array or collections stored in the TTree if any.
 
-class HOMuon_TreeLoop_FrontBack_Plotter : public TSelector {
+class HOMuon_TreeLoop_Version_7_0_0_Plotter : public TSelector {
 public :
    TTree          *fChain;   //!pointer to the analyzed TTree or TChain
 
@@ -66,8 +66,8 @@ public :
    TBranch        *b_Reco_Phis;   //!
    TBranch        *b_Reco_Energies;   //!
 
-   HOMuon_TreeLoop_FrontBack_Plotter(TTree * /*tree*/ =0) : fChain(0) { }
-   virtual ~HOMuon_TreeLoop_FrontBack_Plotter() { }
+   HOMuon_TreeLoop_Version_7_0_0_Plotter(TTree * /*tree*/ =0) : fChain(0) { }
+   virtual ~HOMuon_TreeLoop_Version_7_0_0_Plotter() { }
    virtual Int_t   Version() const { return 2; }
    virtual void    Begin(TTree *tree);
    virtual void    SlaveBegin(TTree *tree);
@@ -120,13 +120,13 @@ public :
    double WrapCheck(double phi1, double phi2);
 
 
-   ClassDef(HOMuon_TreeLoop_FrontBack_Plotter,0);
+   ClassDef(HOMuon_TreeLoop_Version_7_0_0_Plotter,0);
 };
 
 #endif
 
-#ifdef HOMuon_TreeLoop_FrontBack_Plotter_cxx
-void HOMuon_TreeLoop_FrontBack_Plotter::Init(TTree *tree)
+#ifdef HOMuon_TreeLoop_Version_7_0_0_Plotter_cxx
+void HOMuon_TreeLoop_Version_7_0_0_Plotter::Init(TTree *tree)
 {
    // The Init() function is called when the selector needs to initialize
    // a new tree or chain. Typically here the branch addresses and branch
@@ -180,7 +180,7 @@ void HOMuon_TreeLoop_FrontBack_Plotter::Init(TTree *tree)
    fChain->SetBranchAddress("Reco_Energies", &Reco_Energies, &b_Reco_Energies);
 }
 
-Bool_t HOMuon_TreeLoop_FrontBack_Plotter::Notify()
+Bool_t HOMuon_TreeLoop_Version_7_0_0_Plotter::Notify()
 {
    // The Notify() function is called when a new file is opened. This
    // can be either for a new TTree in a TChain or when when a new TTree
@@ -191,4 +191,4 @@ Bool_t HOMuon_TreeLoop_FrontBack_Plotter::Notify()
    return kTRUE;
 }
 
-#endif // #ifdef HOMuon_TreeLoop_FrontBack_Plotter_cxx
+#endif // #ifdef HOMuon_TreeLoop_Version_7_0_0_Plotter_cxx

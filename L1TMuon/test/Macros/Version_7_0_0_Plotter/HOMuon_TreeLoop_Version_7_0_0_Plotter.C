@@ -1,5 +1,5 @@
-#define HOMuon_TreeLoop_FrontBack_Plotter_cxx
-// The class definition in HOMuon_TreeLoop_FrontBack_Plotter.h has been generated automatically
+#define HOMuon_TreeLoop_Version_7_0_0_Plotter_cxx
+// The class definition in HOMuon_TreeLoop_Version_7_0_0_Plotter.h has been generated automatically
 // by the ROOT utility TTree::MakeSelector(). This class is derived
 // from the ROOT class TSelector. For more information on the TSelector
 // framework see $ROOTSYS/README/README.SELECTOR or the ROOT User Manual.
@@ -18,12 +18,12 @@
 //
 // To use this file, try the following session on your Tree T:
 //
-// Root > T->Process("HOMuon_TreeLoop_FrontBack_Plotter.C")
-// Root > T->Process("HOMuon_TreeLoop_FrontBack_Plotter.C","some options")
-// Root > T->Process("HOMuon_TreeLoop_FrontBack_Plotter.C+")
+// Root > T->Process("HOMuon_TreeLoop_Version_7_0_0_Plotter.C")
+// Root > T->Process("HOMuon_TreeLoop_Version_7_0_0_Plotter.C","some options")
+// Root > T->Process("HOMuon_TreeLoop_Version_7_0_0_Plotter.C+")
 //
 
-#include "HOMuon_TreeLoop_FrontBack_Plotter.h"
+#include "HOMuon_TreeLoop_Version_7_0_0_Plotter.h"
 #include <TH2.h>
 #include <TStyle.h>
 #include <TH1F.h>
@@ -53,7 +53,7 @@
 #define THRESHOLD 0.2
 #define TILELENGTH 0.088  //Rounding up 5 degrees
 
-void HOMuon_TreeLoop_FrontBack_Plotter::Begin(TTree * /*tree*/)
+void HOMuon_TreeLoop_Version_7_0_0_Plotter::Begin(TTree * /*tree*/)
 {
    // The Begin() function is called at the start of the query.
    // When running with PROOF Begin() is only called on the client.
@@ -63,7 +63,7 @@ void HOMuon_TreeLoop_FrontBack_Plotter::Begin(TTree * /*tree*/)
 
 }
 
-void HOMuon_TreeLoop_FrontBack_Plotter::SlaveBegin(TTree * /*tree*/)
+void HOMuon_TreeLoop_Version_7_0_0_Plotter::SlaveBegin(TTree * /*tree*/)
 {
    // The SlaveBegin() function is called after the Begin() function.
    // When running with PROOF SlaveBegin() is called on each slave server.
@@ -73,12 +73,12 @@ void HOMuon_TreeLoop_FrontBack_Plotter::SlaveBegin(TTree * /*tree*/)
 
 }
 
-Bool_t HOMuon_TreeLoop_FrontBack_Plotter::Process(Long64_t entry)
+Bool_t HOMuon_TreeLoop_Version_7_0_0_Plotter::Process(Long64_t entry)
 {
    // The Process() function is called for each entry in the tree (or possibly
    // keyed object in the case of PROOF) to be processed. The entry argument
    // specifies which entry in the currently loaded tree is to be processed.
-   // It can be passed to either HOMuon_TreeLoop_FrontBack_Plotter::GetEntry() or TBranch::GetEntry()
+   // It can be passed to either HOMuon_TreeLoop_Version_7_0_0_Plotter::GetEntry() or TBranch::GetEntry()
    // to read either all or the required parts of the data. When processing
    // keyed objects with PROOF, the object is already loaded and is available
    // via the fObject pointer.
@@ -209,7 +209,6 @@ Bool_t HOMuon_TreeLoop_FrontBack_Plotter::Process(Long64_t entry)
 	  }
 	}
       } 
-    
       //Back Propagator
       for(unsigned int i_p = 0; i_p < Prop_HO_Back_Etas->size(); i_p++){
 	FillDeltaEtaPhiHistograms(Reco_Etas->at(i_r), Prop_HO_Back_Etas->at(i_p), 
@@ -230,7 +229,7 @@ Bool_t HOMuon_TreeLoop_FrontBack_Plotter::Process(Long64_t entry)
   return kTRUE;
 }
 
-void HOMuon_TreeLoop_FrontBack_Plotter::SlaveTerminate()
+void HOMuon_TreeLoop_Version_7_0_0_Plotter::SlaveTerminate()
 {
    // The SlaveTerminate() function is called after all entries or objects
    // have been processed. When running with PROOF SlaveTerminate() is called
@@ -238,7 +237,7 @@ void HOMuon_TreeLoop_FrontBack_Plotter::SlaveTerminate()
 
 }
 
-void HOMuon_TreeLoop_FrontBack_Plotter::Terminate()
+void HOMuon_TreeLoop_Version_7_0_0_Plotter::Terminate()
 {
    // The Terminate() function is the last function to be called during
    // a query. It always runs on the client, it can be used to present
@@ -252,7 +251,7 @@ void HOMuon_TreeLoop_FrontBack_Plotter::Terminate()
    
   //Loop over the Maps of Histograms, Save and Plot them.
  
-  TFile *outfile= TFile::Open("/home/cranelli/HO_Muon/CMSSW_6_2_0_pre5/src/L1TriggerDPGUpgrade/L1TMuon/test/Plots/FrontBack_Plots/out_Version_7_0_0_14_Muon.root","RECREATE");
+  TFile *outfile= TFile::Open("/home/cranelli/HO_Muon/CMSSW_7_0_0/src/L1TriggerDPGUpgrade/L1TMuon/test/Plots/Version_7_0_0_Plots/out_Version_7_0_0_14_Muon.root","RECREATE");
     
   for(it = _h1Energy.begin(); it!=_h1Energy.end(); ++it){
     //cout << it->first << endl;
@@ -310,7 +309,7 @@ void HOMuon_TreeLoop_FrontBack_Plotter::Terminate()
  * Since all Energy Histrograms should have a common form, they are held in a single map.
  */
 
-void HOMuon_TreeLoop_FrontBack_Plotter::FillEnergyHistograms(float energy, std::string key){
+void HOMuon_TreeLoop_Version_7_0_0_Plotter::FillEnergyHistograms(float energy, std::string key){
   if(!_h1Energy.count(key)){
     _h1Energy[key] = new TH1F(Form("energy_%s",key.c_str()), Form("Energy %s",key.c_str()), 500,-1.0,9.9);
   }
@@ -321,7 +320,7 @@ void HOMuon_TreeLoop_FrontBack_Plotter::FillEnergyHistograms(float energy, std::
  *Fills the Eta Histograms, the Phi Histograms, and Makes a Map of Eta vs Phi
  */
 
-void HOMuon_TreeLoop_FrontBack_Plotter::FillEtaPhiHistograms(float eta, float phi, std::string key){  //Eta Phi Histograms Fill   
+void HOMuon_TreeLoop_Version_7_0_0_Plotter::FillEtaPhiHistograms(float eta, float phi, std::string key){  //Eta Phi Histograms Fill   
 
   if(!_h1Eta.count(key)){
     _h1Eta[key] = new TH1F(Form("Eta_%s",key.c_str()), Form("Eta %s",key.c_str()),
@@ -348,7 +347,7 @@ void HOMuon_TreeLoop_FrontBack_Plotter::FillEtaPhiHistograms(float eta, float ph
  * Fill the difference in Eta and Phi between two particles
  */
 
-void HOMuon_TreeLoop_FrontBack_Plotter::FillDeltaEtaPhiHistograms(float eta1, float eta2, float phi1, float phi2, std::string key){
+void HOMuon_TreeLoop_Version_7_0_0_Plotter::FillDeltaEtaPhiHistograms(float eta1, float eta2, float phi1, float phi2, std::string key){
   //Delta Eta Histograms Fill                                                                                                            
   if(!_h1DeltaEta.count(key)){
     _h1DeltaEta[key] = new TH1F(Form("DeltaEta_%s",key.c_str()), Form("DeltaEta %s",key.c_str()), 400, -2.6, 2.6);
@@ -377,7 +376,7 @@ void HOMuon_TreeLoop_FrontBack_Plotter::FillDeltaEtaPhiHistograms(float eta1, fl
  * Fill histogram for the "count" ie number of propagators or recos per event.
  */
 
-void HOMuon_TreeLoop_FrontBack_Plotter::FillEnergyMap(float eta, float phi, double energy, std::string key){
+void HOMuon_TreeLoop_Version_7_0_0_Plotter::FillEnergyMap(float eta, float phi, double energy, std::string key){
   if(!_h2EnergyMap.count(key)){
     _h2EnergyMap[key] = new TH2F(Form("DeltaEtaDeltaPhi_%s",key.c_str()), Form("DeltaEtaDeltaPhi %s",key.c_str()),
                                         60, -1.5, 1.5, 144, -3.14, 3.14);
@@ -389,7 +388,7 @@ void HOMuon_TreeLoop_FrontBack_Plotter::FillEnergyMap(float eta, float phi, doub
  * Plot energy map for a single event.
  */
 
-void HOMuon_TreeLoop_FrontBack_Plotter::FillCountHistograms(float counts, std::string key){
+void HOMuon_TreeLoop_Version_7_0_0_Plotter::FillCountHistograms(float counts, std::string key){
   if(!_h1Count.count(key)){
     _h1Count[key] = new TH1F(Form("count_%s",key.c_str()), Form("Count %s",key.c_str()), 21,-1.0,20);
   }
@@ -403,7 +402,7 @@ void HOMuon_TreeLoop_FrontBack_Plotter::FillCountHistograms(float counts, std::s
  * or within neighboring tiles.
  */
 
-bool HOMuon_TreeLoop_FrontBack_Plotter::LooseCut(double eta1, double eta2, double phi1, double phi2){
+bool HOMuon_TreeLoop_Version_7_0_0_Plotter::LooseCut(double eta1, double eta2, double phi1, double phi2){
   //cout << "TileLength div 2: " << TILELENGTH/2 << endl;
   //cout << "Inputs: " << eta1 << " "<<eta2 << " " << phi1 << " " << phi2 << endl;
   //cout << "Differences " << abs(eta1-eta2) << " " << abs(WrapCheck(phi1,phi2)) << endl; 
@@ -419,7 +418,7 @@ bool HOMuon_TreeLoop_FrontBack_Plotter::LooseCut(double eta1, double eta2, doubl
  * Note the entries start at 0.
  */
 
-void HOMuon_TreeLoop_FrontBack_Plotter::PlotEntry(Long64_t entry){
+void HOMuon_TreeLoop_Version_7_0_0_Plotter::PlotEntry(Long64_t entry){
   
   //Checks to see if entry has already been plotted
   if(plotted_entries.count(entry)==0){
@@ -444,7 +443,7 @@ void HOMuon_TreeLoop_FrontBack_Plotter::PlotEntry(Long64_t entry){
  * Functions to facilitate the creation of historgrams, "make pretty like".
  */
 
-void HOMuon_TreeLoop_FrontBack_Plotter::PlotCreator(TH1F * hist, const char * title, const char * xAxis,const char * yAxis,double xMin, double xMax, int num_binmerge, bool isLogy){
+void HOMuon_TreeLoop_Version_7_0_0_Plotter::PlotCreator(TH1F * hist, const char * title, const char * xAxis,const char * yAxis,double xMin, double xMax, int num_binmerge, bool isLogy){
   
   hist->Sumw2(); // make sure errors are correct before rebinning
   hist->SetTitle(""); // empty the title
@@ -477,10 +476,10 @@ void HOMuon_TreeLoop_FrontBack_Plotter::PlotCreator(TH1F * hist, const char * ti
   //hist->Draw("e0,hist");
   
   // std::cout << Form("../Plots/SwitchtoTree_Plots/%s.png",out_name) << std::endl;
-  c->SaveAs(Form("/home/cranelli/HO_Muon/CMSSW_6_2_0_pre5/src/L1TriggerDPGUpgrade/L1TMuon/test/Plots/FrontBack_Plots/%s.png",title));
+  c->SaveAs(Form("/home/cranelli/HO_Muon/CMSSW_7_0_0/src/L1TriggerDPGUpgrade/L1TMuon/test/Plots/Version_7_0_0_Plots/%s.png",title));
 }
 
-void HOMuon_TreeLoop_FrontBack_Plotter::PlotCreator2D(TH2F* hist, const char* title, const char* xAxis, const char* yAxis, double xMin, double xMax,double yMin, double yMax,int num_xbinmerge, int num_ybinmerge, const char * type){
+void HOMuon_TreeLoop_Version_7_0_0_Plotter::PlotCreator2D(TH2F* hist, const char* title, const char* xAxis, const char* yAxis, double xMin, double xMax,double yMin, double yMax,int num_xbinmerge, int num_ybinmerge, const char * type){
 
   //gr = new TGraph();
   hist->RebinX(num_xbinmerge);
@@ -516,14 +515,14 @@ void HOMuon_TreeLoop_FrontBack_Plotter::PlotCreator2D(TH2F* hist, const char* ti
   c->SetFillColor(0);
   c->SetBorderSize(0);
   hist->Draw(type);
-  c->SaveAs(Form("/home/cranelli/HO_Muon/CMSSW_6_2_0_pre5/src/L1TriggerDPGUpgrade/L1TMuon/test/Plots/FrontBack_Plots/%s.png",title));
+  c->SaveAs(Form("/home/cranelli/HO_Muon/CMSSW_6_2_0_pre5/src/L1TriggerDPGUpgrade/L1TMuon/test/Plots/Version_7_0_0_Plots/%s.png",title));
   //c->Print(Form("p_%s.png",name));
   //c->Print(Form("p_%s.eps",name));
   //c->Print(Form("p_%s.pdf",name));
   return;
 }
 
-double HOMuon_TreeLoop_FrontBack_Plotter::WrapCheck(double phi1, double phi2){
+double HOMuon_TreeLoop_Version_7_0_0_Plotter::WrapCheck(double phi1, double phi2){
   //double M_PI = (double) 3.14;
   double delta_phi = phi1 - phi2;
   if(delta_phi < -M_PI){
