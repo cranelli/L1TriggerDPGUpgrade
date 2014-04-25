@@ -61,7 +61,7 @@ process.FEVTDEBUGoutput = cms.OutputModule("PoolOutputModule",
     splitLevel = cms.untracked.int32(0),
     eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
     outputCommands = process.FEVTDEBUGEventContent.outputCommands,
-    fileName = cms.untracked.string('SingleMu14Pt_' +runParameters.PREFIX + '_Barrel_GEN_SIM_DIGI_L1_RECO.root'),
+    fileName = cms.untracked.string(runParameters.PREFIX + '_Barrel_GEN_SIM_DIGI_L1_RECO.root'),
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
         dataTier = cms.untracked.string('')
@@ -82,9 +82,9 @@ process.GlobalTag = GlobalTag(process.GlobalTag, runParameters.GLOBALTAGNAME, ''
 
 process.generator = cms.EDProducer("FlatRandomPtGunProducer",
 	PGunParameters = cms.PSet(
-        MinPt = cms.double(14),
-	MaxPt = cms.double(14),
-        PartID = cms.vint32(-13), #-13 is muons, 211 is Pi+       
+        MinPt = cms.double(runParameters.MINPT),
+	MaxPt = cms.double(runParameters.MAXPT),
+        PartID = cms.vint32(runParameters.PID), #-13 is muons, 211 is Pi+       
 	MaxPhi = cms.double(3.14159265359),
 	MinPhi = cms.double(-3.14159265359),
 	MaxEta = cms.double(0.087*15),
@@ -99,7 +99,7 @@ process.generator = cms.EDProducer("FlatRandomPtGunProducer",
     ),
     Verbosity = cms.untracked.int32(0),
     psethack = cms.string('single mu pt 5to100'),
-    AddAntiParticle = cms.bool(False), 
+    AddAntiParticle = cms.bool(runParameters.ADDANTIPARTICLE), 
     firstRun = cms.untracked.uint32(1)
 )
 

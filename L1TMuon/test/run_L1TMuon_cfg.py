@@ -22,7 +22,7 @@ process.GlobalTag = GlobalTag(process.GlobalTag, runParameters.GLOBALTAGNAME, ''
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:mc', '')
 
 
-infile = ['file:SingleMu14Pt_' +runParameters.PREFIX+'_Barrel_GEN_SIM_DIGI_L1_RECO.root']
+infile = ['file:'+runParameters.PREFIX+'_Barrel_GEN_SIM_DIGI_L1_RECO.root']
 
 #infile = ['file:/data/users/cranelli/HOL1Muon_Samples/MinBias/mc_summer13_MinBias14TeV_GenSim_UpgrdPhase1Age0START.root']
 #infile = ['file:SingleMu14Pt_AllSiPM_Barrel_GEN_SIM_DIGI_L1_RECO.root']
@@ -92,7 +92,7 @@ process.FEVTDEBUGoutput = cms.OutputModule(
 
 
 
-    fileName = cms.untracked.string('L1TMuonSingleMu_14Pt_' + runParameters.PREFIX+ '_Barrel.root'),
+    fileName = cms.untracked.string(runParameters.PREFIX+ '_Barrel.root'),
 
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),

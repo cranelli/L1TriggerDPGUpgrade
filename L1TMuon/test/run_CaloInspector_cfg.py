@@ -33,7 +33,7 @@ process.GlobalTag = GlobalTag(process.GlobalTag, runParameters.GLOBALTAGNAME, ''
 
 process.TFileService = cms.Service(
     "TFileService",
-    fileName=cms.string('L1ITMuonSingleMu_14Pt_'+runParameters.PREFIX+'_caloInspector.root')
+    fileName=cms.string(runParameters.PREFIX+'_caloInspector.root')
     )
 
 process.maxEvents = cms.untracked.PSet(
@@ -57,7 +57,7 @@ process.L1TMuonCaloInsp = cms.EDAnalyzer(
     dRdttfToStdMu = cms.untracked.double(99.0)  #0.2)
 )
 
-infile = 'file:L1TMuonSingleMu_14Pt_'+runParameters.PREFIX+'_Barrel.root'
+infile = 'file:'+runParameters.PREFIX+'_Barrel.root'
 
 process.source = cms.Source(
     'PoolSource',
