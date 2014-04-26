@@ -12,6 +12,8 @@
 #include "TGraph.h"
 #include "iostream"
 #include <vector>
+#include "plotParameters.h"
+
 
 //#include "HOMuon_TreeLoop_FrontBack_Plotter.h"
 
@@ -24,21 +26,18 @@
  *Define (and easy to modify constants)
  */
 
-const char* prefix = "SingleMu14Pt_PostLS1";
-
-const char* tree_loc="L1TMuonCaloInsp/ho_muon_tree";
-const char* root_path ="/home/cranelli/HO_Muon/CMSSW_7_0_0/src/L1TriggerDPGUpgrade/L1TMuon/test/RootFiles/";
+_plotParameters plotParameters;
 
 
 void HOMuon_Version_7_0_0_Plotter(){  
   
   std::stringstream file;
-  file << root_path << prefix << "_caloInspector.root";
+  file << plotParameters.ROOTPATH << plotParameters.PREFIX << "_caloInspector.root";
 
 
   TFile* inFile = TFile::Open(file.str().c_str());
   //std::cout << inFile << std::endl;
-  TTree* T = (TTree*)inFile->Get(tree_loc);
+  TTree* T = (TTree*)inFile->Get(plotParameters.TREELOC);
   cout<<T << endl;
   //gRoot->ProcessLine(".L HOMuon_TreeLoop_FrontBack_Plotter.C+");
   T->Process("HOMuon_TreeLoop_Version_7_0_0_Plotter.C+");
