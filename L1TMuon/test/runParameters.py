@@ -1,6 +1,6 @@
 #NameRoot.py
 
-PREFIX="test"
-NUMEVENTS=10
-GLOBALTAGNAME='auto:upgradePLS1'
+PREFIX="QCD_Pt-300to470_POSTLS1"
+NUMEVENTS=100
+GLOBALTAGNAME='PostLS162_V2::All'
 CONFIGURATIONGEOMETRY='Configuration.Geometry.GeometryExtended2015Reco_cff'
