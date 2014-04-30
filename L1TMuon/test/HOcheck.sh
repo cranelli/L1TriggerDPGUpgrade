@@ -73,6 +73,7 @@ echo $HOME
 #/home/cranelli/geant4/geant4.9.4.p02/x86_64-slc5-gcc43/bin/Linux-g++/fcalor $PARAMETER_SET >> $FINAL_LOG 2>&1
 #cd /home/cranelli/HO_Muon/CMSSW_6_2_0_pre5/src/L1TriggerDPGUpgrade/L1TMuon/test/
 #cmsRun particle_gun_gen_sim.py
+cmsRun run_RAW2DIGI_RECO.py
 #echo "working"
 #cmsRun run_L1TMuon_cfg.py
 #cmsRun run_CaloInspector_cfg.py

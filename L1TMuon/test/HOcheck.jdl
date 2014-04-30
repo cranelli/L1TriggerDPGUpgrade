@@ -8,5 +8,5 @@ notify_user = Christopher.Anelli@gmail.com
 Output = HO_$(cluster)_$(process).stdout
 Error  = HO_$(cluster)_$(process).stderr
 Log    = HO_$(cluster)_$(process).condor
-Arguments = $(cluster) $(process) /home/cranelli/HO_Muon/CMSSW_7_0_0/src/L1TriggerDPGUpgrade/L1TMuon/test
+Arguments = $(cluster) $(process) /home/cranelli/HO_Muon/CMSSW_6_2_0/src/L1TriggerDPGUpgrade/L1TMuon/test
 Queue 1
