@@ -22,7 +22,7 @@ process.GlobalTag = GlobalTag(process.GlobalTag, runParameters.GLOBALTAGNAME, ''
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:mc', '')
 
 
-infile = ['file:' +runParameters.PREFIX+'_RAW2DIGI_RECO.root']
+infile = ['file:' +runParameters.PREFIX+'_AODSIM.root']
 
 #infile = ['file:/data/users/cranelli/HOL1Muon_Samples/MinBias/mc_summer13_MinBias14TeV_GenSim_UpgrdPhase1Age0START.root']
 #infile = ['file:SingleMu14Pt_AllSiPM_Barrel_GEN_SIM_DIGI_L1_RECO.root']
@@ -50,29 +50,29 @@ process.L1TMuonText = cms.EDAnalyzer(
     'L1TMuonTextDumper',
     doGen = cms.untracked.bool(True),
     genSrc = cms.untracked.InputTag("genParticles"),
-    primitiveSrcs = cms.VInputTag(
+    #primitiveSrcs = cms.VInputTag(
     #cms.InputTag('L1TMuonTriggerPrimitives','CSC'),
     #cms.InputTag('L1TMuonTriggerPrimitives','DT'),
-    cms.InputTag('L1TMuonTriggerPrimitives','HCAL')
+    #cms.InputTag('L1TMuonTriggerPrimitives','HCAL')
     ),
     converterSrcs = cms.VInputTag(    
     cms.InputTag('L1DTTFTrackConverter')
     )
 )
 
-process.L1TMuonConverterSequence += process.L1TMuonText
+#process.L1TMuonConverterSequence += process.L1TMuonText
 
-process.L1TMuonPath = cms.Path(process.L1TMuonSequence)
+#process.L1TMuonPath = cms.Path(process.L1TMuonSequence)
 
 outCommands = cms.untracked.vstring('drop *')
 outCommands.append('keep *_genParticles_*_*')
-outCommands.append('keep *_simCsctfDigis_*_*')
-outCommands.append('keep *_simDttfDigis_*_*')
-outCommands.append('keep *_simRpcTriggerDigis_*_*')
-outCommands.append('keep *_simMuonRPCDigis_*_*')
+#outCommands.append('keep *_simCsctfDigis_*_*')
+#outCommands.append('keep *_simDttfDigis_*_*')
+#outCommands.append('keep *_simRpcTriggerDigis_*_*')
+#outCommands.append('keep *_simMuonRPCDigis_*_*')
 #outCommands.append('keep *_simDtTriggerPrimitiveDigis_*_*')
 #outCommands.append('keep *_simCscTriggerPrimitiveDigis_*_*')
-outCommands.append('keep *_simHcalTriggerPrimitiveDigis_*_*')
+#outCommands.append('keep *_simHcalTriggerPrimitiveDigis_*_*')
 #outCommands.append('keep *_L1TMuonTriggerPrimitives_*_*')
 outCommands.append('keep *_*Converter_*_*')
 outCommands.append('keep *_*AssignedTrackProducer_*_*')
@@ -80,7 +80,7 @@ outCommands.append('keep *_*Matcher_*_*')
 
 outCommands.append('keep *_standAloneMuons_*_*')
 outCommands.append('keep *_towerMaker_*_*')
-outCommands.append('keep *_simHcalDigis_*_*')
+#outCommands.append('keep *_simHcalDigis_*_*')
 outCommands.append('keep *_horeco_*_*')
 outCommands.append('keep *_hbhereco_*_*')
 
@@ -89,8 +89,6 @@ process.FEVTDEBUGoutput = cms.OutputModule(
     splitLevel = cms.untracked.int32(0),
     eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
     outputCommands = outCommands,
-
-
 
     fileName = cms.untracked.string(runParameters.PREFIX+ '.root'),
 
@@ -102,7 +100,9 @@ process.FEVTDEBUGoutput = cms.OutputModule(
 
 process.outPath = cms.EndPath(process.FEVTDEBUGoutput)
 
-process.schedule = cms.Schedule(process.L1TMuonPath,
-                                process.outPath)
+#process.schedule = cms.Schedule(process.L1TMuonPath,
+#                                process.outPath)
+
+process.schedule = cms.Schedule(process.outPath)
 
 
