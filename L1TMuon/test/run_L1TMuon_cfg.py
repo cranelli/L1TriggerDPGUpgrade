@@ -79,6 +79,10 @@ outCommands.append('keep *_*AssignedTrackProducer_*_*')
 outCommands.append('keep *_*Matcher_*_*')
 
 outCommands.append('keep *_standAloneMuons_*_*')
+outCommands.append('keep *_globalMuons_*_*')
+outCommands.append('keep *_muons_*_*')
+outCommands.append('keep *_particleFlowTmp_*_*')
+
 outCommands.append('keep *_towerMaker_*_*')
 outCommands.append('keep *_simHcalDigis_*_*')
 outCommands.append('keep *_horeco_*_*')

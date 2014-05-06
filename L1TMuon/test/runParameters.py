@@ -1,9 +1,9 @@
 #NameRoot.py
 
-PREFIX="SingleMu50Pt_PostLS1"
+PREFIX="SingleMu14Pt_PostLS1"
 NUMEVENTS=1000
-MINPT=50
-MAXPT=50
+MINPT=14
+MAXPT=14
 # 2 is up quarks, -13 is muons (+)
 PID=-13
 ADDANTIPARTICLE=False

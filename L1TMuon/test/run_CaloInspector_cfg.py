@@ -38,7 +38,7 @@ process.TFileService = cms.Service(
 
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(runParameters.NUMEVENTS)
-        #input = cms.untracked.int32(10000)
+    #input = cms.untracked.int32(10)
     )
 
 process.L1TMuonCaloInsp = cms.EDAnalyzer(
@@ -50,6 +50,7 @@ process.L1TMuonCaloInsp = cms.EDAnalyzer(
     hcalSrc = cms.InputTag("L1TMuonTriggerPrimitives","HCAL"),
     stdmuSrc = cms.InputTag("standAloneMuons"),
     glbmuSrc = cms.InputTag("globalMuons"),
+    recomuSrc =cms.InputTag("muons"), 
     dRtruthToRpc  = cms.untracked.double(99.0), #0.2),
     dRrpcToDttf   = cms.untracked.double(99.0), #0.2),
     dRdttfToHcal  = cms.untracked.double(99.0), #0.2),
