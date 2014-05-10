@@ -232,6 +232,11 @@ private:
   std::vector<Float_t> *vec_globalMuons_phis;
   std::vector<Float_t> *vec_globalMuons_pts;
 
+  //Generic Reco Muons are placed in a vector
+  std::vector<Float_t> *vec_recoMuons_etas;
+  std::vector<Float_t> *vec_recoMuons_phis;
+  std::vector<Float_t> *vec_recoMuons_pts;
+  
 
   bool IsaSiPM(double eta, double phi);
   double WrapCheck(double phi1, double phi2);
@@ -348,6 +353,10 @@ L1TMuonCaloInspector::L1TMuonCaloInspector(const edm::ParameterSet& iConfig){
   ho_muon_tree->Branch("GlobalMuons_Phis", "std::vector<Float_t>",&vec_globalMuons_phis);
   ho_muon_tree->Branch("GlobalMuons_Pts", "std::vector<Float_t>",&vec_globalMuons_pts);
 
+  ho_muon_tree->Branch("RecoMuons_Etas", "std::vector<Float_t>",&vec_recoMuons_etas);
+  ho_muon_tree->Branch("RecoMuons_Phis", "std::vector<Float_t>",&vec_recoMuons_phis);
+  ho_muon_tree->Branch("RecoMuons_Pts", "std::vector<Float_t>",&vec_recoMuons_pts);
+
 
   //SetHOGeometry();
 }
@@ -422,8 +431,8 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
   edm::Handle<reco::TrackCollection> globalMuons;
   iEvent.getByLabel(_glbmuInput,globalMuons);
 
-  edm::Handle<reco::MuonCollection> muons;
-  iEvent.getByLabel(_recomuInput,muons);
+  edm::Handle<reco::MuonCollection> recoMuons;
+  iEvent.getByLabel(_recomuInput,recoMuons);
 
   // Some extra collection, always interesting
   edm::Handle<CaloTowerCollection> caloTowers;
@@ -480,10 +489,14 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
   vec_standAlones_etas =0; 
   vec_standAlones_phis =0;
   vec_standAlones_pts =0;
+ 
   vec_globalMuons_etas =0; 
   vec_globalMuons_phis =0;
   vec_globalMuons_pts =0;
-
+  
+  vec_recoMuons_etas =0; 
+  vec_recoMuons_phis =0;
+  vec_recoMuons_pts =0;
 
     
   delete vec_generator_pdgId; vec_generator_pdgId = new std::vector<int>();
@@ -511,6 +524,10 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
   delete vec_globalMuons_etas; vec_globalMuons_etas = new std::vector<Float_t>();
   delete vec_globalMuons_phis; vec_globalMuons_phis = new std::vector<Float_t>();
   delete vec_globalMuons_pts; vec_globalMuons_pts = new std::vector<Float_t>();
+
+  delete vec_recoMuons_etas; vec_recoMuons_etas = new std::vector<Float_t>();
+  delete vec_recoMuons_phis; vec_recoMuons_phis = new std::vector<Float_t>();
+  delete vec_recoMuons_pts; vec_recoMuons_pts = new std::vector<Float_t>();
 
   iEvent.getByLabel(_genInput,truthParticles);
 
@@ -773,6 +790,17 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
     vec_globalMuons_etas->push_back(bglbmu->eta());
     vec_globalMuons_phis->push_back(bglbmu->phi());
     vec_globalMuons_pts->push_back(bglbmu->pt());
+
+  }
+
+  auto bremu = recoMuons->cbegin();
+  auto eremu = recoMuons->cend();
+
+  for( ; bremu != eremu; ++bremu ) {
+    
+    vec_recoMuons_etas->push_back(bremu->eta());
+    vec_recoMuons_phis->push_back(bremu->phi());
+    vec_recoMuons_pts->push_back(bremu->pt());
 
   }
   
