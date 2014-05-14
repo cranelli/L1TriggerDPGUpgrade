@@ -38,7 +38,7 @@ process.TFileService = cms.Service(
 
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(runParameters.NUMEVENTS)
-        #input = cms.untracked.int32(10000)
+    #input = cms.untracked.int32(10)
     )
 
 process.L1TMuonCaloInsp = cms.EDAnalyzer(
@@ -47,9 +47,12 @@ process.L1TMuonCaloInsp = cms.EDAnalyzer(
     genSrc = cms.InputTag("genParticles"),
     rpcSrc = cms.InputTag("L1RPCbTFTrackConverter"),
     dttfSrc = cms.InputTag("L1DTTFTrackConverter"),
-    hcalSrc = cms.InputTag("L1TMuonTriggerPrimitives","HCAL"),
+    #hcalSrc = cms.InputTag("L1TMuonTriggerPrimitives","HCAL"),
     stdmuSrc = cms.InputTag("standAloneMuons"),
     glbmuSrc = cms.InputTag("globalMuons"),
+    recomuSrc =cms.InputTag("muons"),
+    #l1extraSrc = cms.InputTag("l1extraParticles"),
+    
     dRtruthToRpc  = cms.untracked.double(99.0), #0.2),
     dRrpcToDttf   = cms.untracked.double(99.0), #0.2),
     dRdttfToHcal  = cms.untracked.double(99.0), #0.2),
@@ -57,7 +60,7 @@ process.L1TMuonCaloInsp = cms.EDAnalyzer(
     dRdttfToStdMu = cms.untracked.double(99.0)  #0.2)
 )
 
-infile = 'file:'+runParameters.PREFIX+'.root'
+infile = 'file:'+runParameters.PREFIX+'_Output.root'
 
 process.source = cms.Source(
     'PoolSource',

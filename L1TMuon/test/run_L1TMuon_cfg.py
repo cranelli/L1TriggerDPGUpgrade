@@ -97,7 +97,7 @@ process.FEVTDEBUGoutput = cms.OutputModule(
     eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
     outputCommands = outCommands,
 
-    fileName = cms.untracked.string(runParameters.PREFIX+ '_Filtered.root'),
+    fileName = cms.untracked.string(runParameters.PREFIX+ '_Output.root'),
 
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),

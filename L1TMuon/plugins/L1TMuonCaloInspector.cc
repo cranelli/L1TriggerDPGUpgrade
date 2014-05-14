@@ -100,6 +100,10 @@
 #include "DataFormats/HcalDetId/interface/HcalDetId.h"
 #include "DataFormats/HcalDetId/interface/HcalSubdetector.h"
 
+#include "DataFormats/MuonReco/interface/Muon.h"
+#include "DataFormats/MuonReco/interface/MuonFwd.h"
+#include "DataFormats/MuonReco/interface/MuonSelectors.h"
+
 #include <vector>
 #include <math.h>
 #include <iostream>
@@ -147,6 +151,7 @@ private:
   edm::InputTag _hcalInput;
   edm::InputTag _stdmuInput;
   edm::InputTag _glbmuInput;
+  edm::InputTag _recomuInput;
 
   // Delta R values to be used for matching
   double _dRtruthToRpc, _dRrpcToDttf, _dRdttfToHcal, 
@@ -212,10 +217,26 @@ private:
   std::vector<bool> * vec_prop_ho_frontbacksame;
     
   //Reconstructed HO events are placed in a vector
-  std::vector<Float_t> *vec_reco_etas;
-  std::vector<Float_t> *vec_reco_phis;
-  std::vector<Float_t> *vec_reco_energies;
+  std::vector<Float_t> *vec_horeco_etas;
+  std::vector<Float_t> *vec_horeco_phis;
+  std::vector<Float_t> *vec_horeco_energies;
   //std::vector<bool> *vec_reco_IsaSiPMs;
+
+  //Reconstructed StandAlone Muon events are placed in a vector
+  std::vector<Float_t> *vec_standAlones_etas;
+  std::vector<Float_t> *vec_standAlones_phis;
+  std::vector<Float_t> *vec_standAlones_pts;
+
+  //Reconstructed Global Muon events are placed in a vector
+  std::vector<Float_t> *vec_globalMuons_etas;
+  std::vector<Float_t> *vec_globalMuons_phis;
+  std::vector<Float_t> *vec_globalMuons_pts;
+
+  //Generic Reco Muons are placed in a vector
+  std::vector<Float_t> *vec_recoMuons_etas;
+  std::vector<Float_t> *vec_recoMuons_phis;
+  std::vector<Float_t> *vec_recoMuons_pts;
+  
 
   bool IsaSiPM(double eta, double phi);
   double WrapCheck(double phi1, double phi2);
@@ -272,10 +293,12 @@ L1TMuonCaloInspector::L1TMuonCaloInspector(const edm::ParameterSet& iConfig){
   }
   _rpcInput =   iConfig.getParameter<edm::InputTag>("rpcSrc");
   _dttfInput =  iConfig.getParameter<edm::InputTag>("dttfSrc");
-  _hcalInput =  iConfig.getParameter<edm::InputTag>("hcalSrc");
+  //_hcalInput =  iConfig.getParameter<edm::InputTag>("hcalSrc");
   _stdmuInput = iConfig.getParameter<edm::InputTag>("stdmuSrc");
   _glbmuInput = iConfig.getParameter<edm::InputTag>("glbmuSrc");
-  
+  _recomuInput = iConfig.getParameter<edm::InputTag>("recomuSrc");
+  //_l1extraInput = iConfig.getParameter<edm::InputTag>("l1extraSrc");
+
   _dRtruthToRpc =iConfig.getUntrackedParameter<double>("dRtruthToRpc" ,1.);
   _dRrpcToDttf  =iConfig.getUntrackedParameter<double>("dRrpcToDttf"  ,1.);
   _dRdttfToHcal =iConfig.getUntrackedParameter<double>("dRdttfToHcal" ,1.);
@@ -318,10 +341,22 @@ L1TMuonCaloInspector::L1TMuonCaloInspector(const edm::ParameterSet& iConfig){
   ho_muon_tree->Branch("Prop_HO_FrontBackSame", "std::vector<bool>",&vec_prop_ho_frontbacksame);
 
 
-  ho_muon_tree->Branch("Reco_Etas", "std::vector<Float_t>",&vec_reco_etas);
-  ho_muon_tree->Branch("Reco_Phis", "std::vector<Float_t>",&vec_reco_phis);
-  ho_muon_tree->Branch("Reco_Energies", "std::vector<Float_t>",&vec_reco_energies);
+  ho_muon_tree->Branch("HOReco_Etas", "std::vector<Float_t>",&vec_horeco_etas);
+  ho_muon_tree->Branch("HOReco_Phis", "std::vector<Float_t>",&vec_horeco_phis);
+  ho_muon_tree->Branch("HOReco_Energies", "std::vector<Float_t>",&vec_horeco_energies);
   //ho_muon_tree->Branch("Reco_IsaSiPMs", "std::vector<bool>",&vec_reco_IsaSiPMs);
+
+  ho_muon_tree->Branch("StandAlone_Etas", "std::vector<Float_t>",&vec_standAlones_etas);
+  ho_muon_tree->Branch("StandAlone_Phis", "std::vector<Float_t>",&vec_standAlones_phis);
+  ho_muon_tree->Branch("StandAlone_Pts", "std::vector<Float_t>",&vec_standAlones_pts);
+
+  ho_muon_tree->Branch("GlobalMuons_Etas", "std::vector<Float_t>",&vec_globalMuons_etas);
+  ho_muon_tree->Branch("GlobalMuons_Phis", "std::vector<Float_t>",&vec_globalMuons_phis);
+  ho_muon_tree->Branch("GlobalMuons_Pts", "std::vector<Float_t>",&vec_globalMuons_pts);
+
+  ho_muon_tree->Branch("RecoMuons_Etas", "std::vector<Float_t>",&vec_recoMuons_etas);
+  ho_muon_tree->Branch("RecoMuons_Phis", "std::vector<Float_t>",&vec_recoMuons_phis);
+  ho_muon_tree->Branch("RecoMuons_Pts", "std::vector<Float_t>",&vec_recoMuons_pts);
 
 
   //SetHOGeometry();
@@ -388,14 +423,17 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
   edm::Handle<InternalTrackCollection> dttfTriggerPrimitives;
   iEvent.getByLabel(_dttfInput,dttfTriggerPrimitives);
 
-  edm::Handle<TriggerPrimitiveCollection> hcalTriggerPrimitives;
-  iEvent.getByLabel(_hcalInput,hcalTriggerPrimitives);
+  //edm::Handle<TriggerPrimitiveCollection> hcalTriggerPrimitives;
+  //iEvent.getByLabel(_hcalInput,hcalTriggerPrimitives);
 
   edm::Handle<reco::TrackCollection> standaloneMuons;
   iEvent.getByLabel(_stdmuInput,standaloneMuons);
 
   edm::Handle<reco::TrackCollection> globalMuons;
   iEvent.getByLabel(_glbmuInput,globalMuons);
+
+  edm::Handle<reco::MuonCollection> recoMuons;
+  iEvent.getByLabel(_recomuInput,recoMuons);
 
   // Some extra collection, always interesting
   edm::Handle<CaloTowerCollection> caloTowers;
@@ -445,10 +483,22 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
   vec_prop_ho_back_zs =0;
   //vec_prop_ho_back_IsaSiPMs=0;
   vec_prop_ho_frontbacksame=0;
-  vec_reco_etas = 0;
-  vec_reco_phis = 0;
-  vec_reco_energies = 0;
-  //vec_reco_IsaSiPMs = 0;
+  vec_horeco_etas = 0;
+  vec_horeco_phis = 0;
+  vec_horeco_energies = 0;
+  //vec_horeco_IsaSiPMs = 0;
+  vec_standAlones_etas =0; 
+  vec_standAlones_phis =0;
+  vec_standAlones_pts =0;
+ 
+  vec_globalMuons_etas =0; 
+  vec_globalMuons_phis =0;
+  vec_globalMuons_pts =0;
+  
+  vec_recoMuons_etas =0; 
+  vec_recoMuons_phis =0;
+  vec_recoMuons_pts =0;
+
     
   delete vec_generator_pdgId; vec_generator_pdgId = new std::vector<int>();
   delete vec_generator_etas; vec_generator_etas = new std::vector<Float_t>();
@@ -468,6 +518,17 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
   //delete vec_prop_ho_back_IsaSiPMs; vec_prop_ho_back_IsaSiPMs = new std::vector<bool>();
   delete vec_prop_ho_frontbacksame; vec_prop_ho_frontbacksame = new std::vector<bool>();
 
+  delete vec_standAlones_etas; vec_standAlones_etas = new std::vector<Float_t>();
+  delete vec_standAlones_phis; vec_standAlones_phis = new std::vector<Float_t>();
+  delete vec_standAlones_pts; vec_standAlones_pts = new std::vector<Float_t>();
+
+  delete vec_globalMuons_etas; vec_globalMuons_etas = new std::vector<Float_t>();
+  delete vec_globalMuons_phis; vec_globalMuons_phis = new std::vector<Float_t>();
+  delete vec_globalMuons_pts; vec_globalMuons_pts = new std::vector<Float_t>();
+
+  delete vec_recoMuons_etas; vec_recoMuons_etas = new std::vector<Float_t>();
+  delete vec_recoMuons_phis; vec_recoMuons_phis = new std::vector<Float_t>();
+  delete vec_recoMuons_pts; vec_recoMuons_pts = new std::vector<Float_t>();
 
   iEvent.getByLabel(_genInput,truthParticles);
 
@@ -500,11 +561,7 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
 
   for( ; btruth != etruth; ++btruth ) {
     
-    //cout << endl << btruth->pdgId();
-    //cout << btruth->eta()<<endl;
-    //cout << btruth->phi()<<endl;
-    //cout << btruth->pt()<<endl;
-
+    
     /*******
      * Initial quality cuts
      *******/
@@ -551,9 +608,7 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
     //Generator_Phi = btruth->phi();
     //ho_muon_tree->Branch("Propagator", &Propagator_t->phi, "phi/F:eta")     
 
-    
-
-    //Let us fill some just "truth" histograms.
+   
     /*
     fillKinematicHistograms(btruth->eta(),btruth->phi(),btruth->pt(),"truth");
     fillMapHistograms(btruth->eta(), btruth->phi(), 
@@ -684,10 +739,10 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
   
   //std::cout << "Number of HO Reconstructed Hits:"
   //<< hoRecoHits->size() <<" ";
-  delete vec_reco_etas; vec_reco_etas = new std::vector<Float_t>();
-  delete vec_reco_phis; vec_reco_phis = new std::vector<Float_t>();
-  delete vec_reco_energies; vec_reco_energies = new std::vector<Float_t>();
-  //delete vec_reco_IsaSiPMs; vec_reco_IsaSiPMs = new std::vector<bool>();
+  delete vec_horeco_etas; vec_horeco_etas = new std::vector<Float_t>();
+  delete vec_horeco_phis; vec_horeco_phis = new std::vector<Float_t>();
+  delete vec_horeco_energies; vec_horeco_energies = new std::vector<Float_t>();
+  //delete vec_horeco_IsaSiPMs; vec_horeco_IsaSiPMs = new std::vector<bool>();
 
   for( ; bho_reco != eho_reco; ++bho_reco ) {
     
@@ -703,15 +758,51 @@ L1TMuonCaloInspector::analyze(const edm::Event& iEvent,
     //cout << ho_recoEta <<":" <<bho_reco->energy() <<" ";
     
     
-    vec_reco_etas->push_back(caloGeo->getPosition(bho_reco->id()).eta());
-    vec_reco_phis->push_back(caloGeo->getPosition(bho_reco->id()).phi());
-    vec_reco_energies->push_back(bho_reco->energy());
-    //vec_reco_IsaSiPMs->push_back(IsaSiPM(caloGeo->getPosition(bho_reco->id()).eta(), caloGeo->getPosition(bho_reco->id()).phi()));
+    vec_horeco_etas->push_back(caloGeo->getPosition(bho_reco->id()).eta());
+    vec_horeco_phis->push_back(caloGeo->getPosition(bho_reco->id()).phi());
+    vec_horeco_energies->push_back(bho_reco->energy());
+    //vec_horeco_IsaSiPMs->push_back(IsaSiPM(caloGeo->getPosition(bho_reco->id()).eta(), caloGeo->getPosition(bho_reco->id()).phi()));
     
     //vec_triggers->push_back(Trigger);
+        
+  }
+
+
+    /*
+     * Stand Alone, Global, and Reco Muons
+     */
+  
+  auto bstdmu = standaloneMuons->cbegin();
+  auto estdmu = standaloneMuons->cend();
+
+  for( ; bstdmu != estdmu; ++bstdmu ) {
     
+    vec_standAlones_etas->push_back(bstdmu->eta());
+    vec_standAlones_phis->push_back(bstdmu->phi());
+    vec_standAlones_pts->push_back(bstdmu->pt());
+
+  }
+
+  auto bglbmu = globalMuons->cbegin();
+  auto eglbmu = globalMuons->cend();
+
+  for( ; bglbmu != eglbmu; ++bglbmu ) {
     
+    vec_globalMuons_etas->push_back(bglbmu->eta());
+    vec_globalMuons_phis->push_back(bglbmu->phi());
+    vec_globalMuons_pts->push_back(bglbmu->pt());
+
+  }
+
+  auto bremu = recoMuons->cbegin();
+  auto eremu = recoMuons->cend();
+
+  for( ; bremu != eremu; ++bremu ) {
     
+    vec_recoMuons_etas->push_back(bremu->eta());
+    vec_recoMuons_phis->push_back(bremu->phi());
+    vec_recoMuons_pts->push_back(bremu->pt());
+
   }
   
   /*
